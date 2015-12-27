@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">TLSMetric</string>
+    <string name="action_settings">Settings</string>
+    <string name="statusText">Welcome to TLS-Metric</string>
+    <string name="buttTextStart">TLS Metric with VPN.</string>
+    <string name="buttTextStop">Stop VPN-Bypass</string>
+    <string name="startDump">TLS Metric with TCPDump.</string>
+    <string name="stopDump">Stop TCPDump.</string>
+    <string name="startProcessing">DNS Request send.</string>
+    <string name="dummy">Dummybutton</string>
+
+</resources>
