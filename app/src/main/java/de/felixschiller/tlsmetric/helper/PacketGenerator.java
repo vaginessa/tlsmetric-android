@@ -6,16 +6,21 @@ import com.voytechs.jnetstream.codec.Header;
 
 import org.jnetpcap.protocol.network.Ip4;
 
+import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.sql.Timestamp;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Set;
 
+import de.felixschiller.tlsmetric.modules.ConnectionHandler;
 import de.felixschiller.tlsmetric.modules.ToolBox;
 import de.felixschiller.tlsmetric.modules.VpnBypassService;
 
 /**
- * Created by schillef on 10.12.15.
+ * Generates Answering Packages
  */
 public class PacketGenerator {
 
@@ -232,9 +237,9 @@ public class PacketGenerator {
     }
 
     /*
-     * TCP flow control and packet forging logic methods
+     * TCP flow control and packet forging logic methods for transmitting packages.
      */
-    public static void handleFlow(TcpFlow data, Header header, int payloadLen){
+    public static void handleFlowAtSend(TcpFlow data, Header header, int payloadLen){
         if (data.seqNr == null) {
             data.seqNr = longToFourBytes((long) header.getValue("seq"));
         }
@@ -245,14 +250,24 @@ public class PacketGenerator {
         data.fin = ((data.flags[1] & (byte) 0x01) != (byte) 0x00);
         data.syn = ((data.flags[1] & (byte) 0x02) != (byte) 0x00);
         data.rst = ((data.flags[1] & (byte) 0x04) != (byte) 0x00);
-        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Test: Code " + ToolBox.printHexBinary(data.flags)
-                + ", seq: " + ToolBox.printHexBinary(data.seqNr) + " as long: "
-                + header.getValue("seq") + ". Flags: fin " + data.fin + " syn " + data.syn + " rst "
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Handle Flow of channel id: " + data.getSrcPort()
+                + ", seq: " + header.getValue("seq") + ". Flags: fin " + data.fin + " syn " + data.syn + " rst "
                 + data.rst + " payload length: " + payloadLen);
 
         long inc = fourBytesToLong(tcpIncrementer(longToFourBytes((long)header.getValue("seq")), payloadLen));
         if(!(inc == fourBytesToLong(data.ackNr))){
             data.ackQueue.add(longToFourBytes(inc));
+        }
+    }
+    /*
+     * TCP flow control and packet forging logic methods called after receiving packages.
+     */
+    public static void handleFlowAtRecieve(TcpFlow data, Header header, int payloadLen){
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Handle receiving Flow");
+
+        long inc = fourBytesToLong(tcpIncrementer(data.seqNr, payloadLen));
+        if(!(inc == fourBytesToLong(data.seqNr))){
+            data.seqQueue.add(tcpIncrementer(longToFourBytes((long) header.getValue("seq")), payloadLen));
         }
     }
 
@@ -272,7 +287,41 @@ public class PacketGenerator {
         //Set the flow to handshake completed
         flow.isOpen = true;
         return synAck;
+    }
 
+    public static byte[] forgeBreakdown(TcpFlow flow){
+
+        //Clear ack and seq queues
+        flow.ackQueue = new LinkedList<>();
+        flow.seqQueue = new LinkedList<>();
+
+        if(flow.flags[0] == (byte)0x11){
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"ACK_FIN detected");
+            //Increment Ack = SYN + 1; SYN = ACK and generate Answer
+            byte[] seq = flow.ackNr;
+            flow.ackNr = tcpIncrementer(flow.seqNr, 1);
+            flow.seqNr = seq;
+            byte[] fin = generatePacket(flow, new byte[]{});
+            //create FIN flag
+            fin[33] = (byte)0x10;
+            flow.isOpen = false;
+            return fin;
+        }
+
+        if(flow.flags[0] == (byte)0x11){
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"FIN detected");
+            //Increment Ack = SYN + 1; SYN = ACK and generate Answer
+            byte[] seq = flow.ackNr;
+            flow.ackNr = tcpIncrementer(flow.seqNr, 1);
+            flow.seqNr = seq;
+            byte[] fin = generatePacket(flow, new byte[]{});
+            //create FIN flag
+            fin[33] = (byte)0x01;
+            flow.isOpen = false;
+            return fin;
+        }
+
+        return null;
     }
 
     public static byte[] tcpIncrementer(byte[] number, int offset) {
@@ -376,26 +425,5 @@ public class PacketGenerator {
 
     }
 
-    public static byte[] handleFlags(TcpFlow flow) {
-
-        //Detect SYN Flag and initiate Handshake if present
-        if (flow.syn && !flow.isOpen) {
-            byte[] b = PacketGenerator.forgeHandshake(flow);
-        }
-
-        //Detect Rst flag and Handle
-        if (flow.rst) {
-            //TODO: sent rst ack packet, close channel
-            return null;
-        }
-
-        //Detect Rst flag and Handle
-        if (flow.fin) {
-            //TODO: sent fin ack packet, close channel
-            return null;
-        }
-
-        return null;
-    }
 }
 

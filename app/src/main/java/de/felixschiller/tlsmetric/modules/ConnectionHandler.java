@@ -6,14 +6,20 @@ import com.voytechs.jnetstream.codec.Header;
 import com.voytechs.jnetstream.codec.Packet;
 import com.voytechs.jnetstream.primitive.address.Address;
 
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 import java.sql.Timestamp;
+import java.util.Iterator;
+import java.util.Set;
 
+import de.felixschiller.tlsmetric.helper.Const;
+import de.felixschiller.tlsmetric.helper.PacketGenerator;
 import de.felixschiller.tlsmetric.helper.SocketData;
 import de.felixschiller.tlsmetric.helper.TcpFlow;
 import de.felixschiller.tlsmetric.helper.UdpFlow;
 
 /**
- * Created by schillef on 21.12.15.
+ * Connection Handler.. what more to say
  */
 public class ConnectionHandler {
 
@@ -67,6 +73,21 @@ public class ConnectionHandler {
         return flow;
     }
 
+    public static void closeConnection(int id) throws IOException {
+        Set<SelectionKey> allKeys = VpnBypassService.mSelector.keys();
+        Iterator<SelectionKey> keyIterator = allKeys.iterator();
+        SelectionKey key;
+        while (keyIterator.hasNext()) {
+            key = keyIterator.next();
+            SocketData data = (SocketData) key.attachment();
+            if (data.getSrcPort() == id) {
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "closing Channel ID = " + id);
+                key.channel().close();
+                key.cancel();
+            }
+        }
+    }
+
     public static int getHeaderOffset(Packet pkt){
         Header ipHeader;
         Header transportHeader;
@@ -88,7 +109,59 @@ public class ConnectionHandler {
         } else {
             return -1;
         }
-
     }
 
+    /*
+     * Kills channels if expired or void
+     */
+    public static void garbageChannels(Packet pkt) throws IOException {
+
+        // Kill UDP channels by timeout or DNS answer
+        //TODO: generate logic and stuff
+        if(pkt.hasHeader("UDP")){
+            int id = (int)pkt.getHeader("UDP").getValue("dport");
+            closeConnection(id);
+        }
+    }
+
+    /*
+     * Kills all artificial VPN Bypass channels
+     */
+    public static void killAll() throws IOException {
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Closing ALL channels.");
+        Set<SelectionKey> allKeys = VpnBypassService.mSelector.keys();
+        Iterator<SelectionKey> keyIterator = allKeys.iterator();
+        SelectionKey key;
+        while (keyIterator.hasNext()) {
+            key = keyIterator.next();
+            key.channel().close();
+            key.cancel();
+        }
+    }
+
+    public static byte[] handleFlags(TcpFlow flow) throws IOException {
+
+        //Detect SYN Flag and initiate Handshake if present
+        if (flow.syn && !flow.isOpen) {
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "SYN Flag detected, initiating Handshake.");
+            return PacketGenerator.forgeHandshake(flow);
+        }
+
+        //Detect Rst flag and Handle
+        if (flow.rst) {
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "FIN Flag detected, initiating closing sequence.");
+            closeConnection(flow.getSrcPort());
+            //TODO: sent rst ack packet, close channel
+            return null;
+        }
+
+        //Detect Rst flag and close/unregister from Selector
+        if (flow.fin) {
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "FIN Flag detected, initiating closing sequence.");
+            closeConnection(flow.getSrcPort());
+            //TODO: sent fin ack packet
+            return null;
+        }
+        return null;
+    }
 }
