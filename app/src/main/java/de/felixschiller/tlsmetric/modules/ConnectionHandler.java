@@ -73,20 +73,7 @@ public class ConnectionHandler {
         return flow;
     }
 
-    public static void closeConnection(int id) throws IOException {
-        Set<SelectionKey> allKeys = VpnBypassService.mSelector.keys();
-        Iterator<SelectionKey> keyIterator = allKeys.iterator();
-        SelectionKey key;
-        while (keyIterator.hasNext()) {
-            key = keyIterator.next();
-            SocketData data = (SocketData) key.attachment();
-            if (data.getSrcPort() == id) {
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "closing Channel ID = " + id);
-                key.channel().close();
-                key.cancel();
-            }
-        }
-    }
+
 
     public static int getHeaderOffset(Packet pkt){
         Header ipHeader;
@@ -111,18 +98,7 @@ public class ConnectionHandler {
         }
     }
 
-    /*
-     * Kills channels if expired or void
-     */
-    public static void garbageChannels(Packet pkt) throws IOException {
 
-        // Kill UDP channels by timeout or DNS answer
-        //TODO: generate logic and stuff
-        if(pkt.hasHeader("UDP")){
-            int id = (int)pkt.getHeader("UDP").getValue("dport");
-            closeConnection(id);
-        }
-    }
 
     /*
      * Kills all artificial VPN Bypass channels
@@ -142,25 +118,23 @@ public class ConnectionHandler {
     public static byte[] handleFlags(TcpFlow flow) throws IOException {
 
         //Detect SYN Flag and initiate Handshake if present
-        if (flow.syn && !flow.isOpen) {
+        if (flow.syn && !flow.isOpen && !flow.isGarbage) {
             if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "SYN Flag detected, initiating Handshake.");
             return PacketGenerator.forgeHandshake(flow);
+
         }
 
         //Detect Rst flag and Handle
         if (flow.rst) {
-            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "FIN Flag detected, initiating closing sequence.");
-            closeConnection(flow.getSrcPort());
-            //TODO: sent rst ack packet, close channel
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "RST Flag detected, initiating closing sequence.");
+            //TODO: sent fin ack packet
             return null;
         }
 
         //Detect Rst flag and close/unregister from Selector
         if (flow.fin) {
             if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "FIN Flag detected, initiating closing sequence.");
-            closeConnection(flow.getSrcPort());
-            //TODO: sent fin ack packet
-            return null;
+            return PacketGenerator.forgeBreakdown(flow);
         }
         return null;
     }

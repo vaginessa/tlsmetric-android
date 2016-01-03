@@ -13,6 +13,9 @@ public abstract class SocketData {
     private Transport mTrans;
     public int offset;
 
+    public boolean isOpen;
+    public boolean isGarbage;
+
     public SocketData(byte[] srcAdd, byte[] dstAdd, int srcPort, int dstPort, Timestamp time, int ipVersion){
         mVersion = ipVersion;
         mSrcAdd = srcAdd;
@@ -20,6 +23,10 @@ public abstract class SocketData {
         mSrcPort = srcPort;
         mDstPort = dstPort;
         mTime = time;}
+
+    public void touchTime(){
+        mTime = new Timestamp(System.currentTimeMillis());
+    }
 
     //Getter and Setter
     public int getVersion() { return mVersion; }

@@ -15,11 +15,11 @@ public class TcpFlow extends SocketData{
     public byte[] seqNr;
     public byte[] ackNr;
 
-    public boolean isOpen;
     public boolean syn;
     public boolean fin;
     public boolean rst;
 
+    public boolean isBreakdown;
 
     public Queue<byte[]> seqQueue = new LinkedList<>();
     public Queue<byte[]> ackQueue = new LinkedList<>();

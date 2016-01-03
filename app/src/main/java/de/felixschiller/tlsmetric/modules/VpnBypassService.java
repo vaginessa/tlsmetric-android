@@ -1,5 +1,6 @@
 package de.felixschiller.tlsmetric.modules;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.VpnService;
 import android.os.ParcelFileDescriptor;
@@ -12,6 +13,7 @@ import com.voytechs.jnetstream.io.EOPacketStream;
 import com.voytechs.jnetstream.io.QueuePacketInputStream;
 import com.voytechs.jnetstream.io.StreamFormatException;
 import com.voytechs.jnetstream.npl.SyntaxError;
+import com.voytechs.jnetstream.protocol.layer4.TCP;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -20,12 +22,16 @@ import java.io.IOException;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -54,6 +60,9 @@ public class VpnBypassService  extends VpnService {
     public static Selector mSelector;
     public static Queue<QueuePacket> mSendQueue = new LinkedList<>();
 
+    //channel List to combat racing conditions
+    public static HashSet<Integer> mChannels = new HashSet<>();
+
     //a. Configure a builder for the interface.
     Builder builder = new Builder();
 
@@ -63,6 +72,12 @@ public class VpnBypassService  extends VpnService {
     private Decoder mDecoder;
     private FileInputStream mIn;
     private FileOutputStream mOut;
+
+    //Kickstart!
+    public static void start(Context context) {
+        Intent intent = new Intent(context, VpnBypassService.class);
+        context.startService(intent);
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -90,6 +105,7 @@ public class VpnBypassService  extends VpnService {
                 try {
                     //Configure the TUN interface.
                     mInterface = builder.setSession("VPNBypassService")
+                            //TODO: add Ipv6
                             .addAddress("10.0.2.1", 32)
                             .addRoute("0.0.0.0", 1)
                             .addRoute("128.0.0.0", 1)
@@ -98,17 +114,9 @@ public class VpnBypassService  extends VpnService {
                     mIn = new FileInputStream(mInterface.getFileDescriptor());
                     mOut = new FileOutputStream(mInterface.getFileDescriptor());
 
-                    /*
-                     * This is the main method for the VPN Bypass service. It is split in two parts.
-                      *
-                     * 1. Read incoming packages from TUN, extracts the layer 4 payload data, opens
-                     * channels to the designated hosts and sends the data when the channels are connected.
-                     *
-                     * 2. Read from the connected channels if data is available and forges the
-                     * Layer 3 associate layer 3 (network) and layer 4 (transport) headers and writes
-                     * them back to the TUN interface.
-                     */
-                    while (true) {
+                    while (!Thread.currentThread().isInterrupted() &&
+                            mInterface.getFileDescriptor() != null &&
+                            mInterface.getFileDescriptor().valid()) {
                         try {
                             // Initialize byte array with 65535 bytes = maxsize of an IP Packet
                             byte[] b = new byte[65535];
@@ -116,23 +124,27 @@ public class VpnBypassService  extends VpnService {
                             // If data is available, read it and process it for the designated channel
                             int available = mIn.read(b);
                             if (available > 0) {
-                                transmit(b, available);
                                 if (Const.IS_DEBUG)
                                     Log.d(Const.LOG_TAG, available + " available at TUN interface.");
+                                transmit(b, available);
+
                             } else {
-                                if (Const.IS_DEBUG)
-                                    Log.d(Const.LOG_TAG, "no data available at TUN interface.");
+                                //if (Const.IS_DEBUG)
+                                //    Log.d(Const.LOG_TAG, "no data available at TUN interface.");
                             }
 
-                            //read from sockets where data is available and process it for writeback to TUN
+                            //read from sockets where data is available and process it for write back to TUN.
                             receive();
 
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
 
-                        //TODO adjust Value, 1000 is for debuging purpose
-                        Thread.sleep(1000);
+                        //Kill channels in with destroyed-flag afgter timeout
+                        garbageChannels();
+
+                        //TODO adjust Value
+                        Thread.sleep(100);
                     }
 
                 } catch (Exception e) {
@@ -177,13 +189,10 @@ public class VpnBypassService  extends VpnService {
      */
     private void transmit(byte[] b, int available) throws IOException, StreamFormatException, SyntaxError {
 
-
         //Allocate buffer and read from TUN interface and dump it
         ByteBuffer bb = ByteBuffer.allocate(available);
         bb.put(b, 0, available);
         b = bb.array();
-        if (Const.IS_DEBUG)
-            Log.d(Const.LOG_TAG, "Packet from TUN: " + ToolBox.printExportHexString(b));
 
         //Dump the packet and process it, if ip header is identified.
         Packet pkt = dumpPacket(b);
@@ -192,16 +201,8 @@ public class VpnBypassService  extends VpnService {
             //Extract connection information
             SocketData data = ConnectionHandler.extractFlowData(pkt);
 
-            if (data.getTransport() == SocketData.Transport.TCP) {
-                PacketGenerator.handleFlowAtSend((TcpFlow) data, pkt.getHeader("TCP"), b.length - data.offset);
-                byte[] controlPacket = ConnectionHandler.handleFlags((TcpFlow) data);
-                if (controlPacket != null) {
-                    dumpPacket(controlPacket);
-                    mOut.write(controlPacket);
-                }
-            }
             //Process outgoing send
-            ManageSending(data, b);
+            ManageSending(data, b, pkt);
         }
     }
 
@@ -209,15 +210,13 @@ public class VpnBypassService  extends VpnService {
      * Read from active sockets and channels and generate the feedback ip-packet
      */
     private void receive() throws IOException, StreamFormatException, SyntaxError {
-
         byte[] b = ManageReceiving();
+
 
         //If there is any usable data, write it back to TUN interface
         if (b != null) {
-
             mOut.write(b);
         }
-
     }
 
     /*
@@ -233,7 +232,7 @@ public class VpnBypassService  extends VpnService {
         Packet pkt = mDecoder.nextPacket();
         if (pkt.hasHeader("IPv4")) {
             mClone.addBuffer(b, "IPv4", timestamp);
-            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, pkt.getSummary());
+            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Dumped " + b.length + " Bytes: " + pkt.getSummary() + ": " + ToolBox.printExportHexString(b));
             return pkt;
         } else {
             mPin.addBuffer(b, "IPv6", timestamp);
@@ -252,100 +251,145 @@ public class VpnBypassService  extends VpnService {
     /*
      * Sends the packet over an existing connection or registers a new channel to the selector.
      */
-    public void ManageSending(SocketData data, byte[] b) throws IOException {
+    public void ManageSending(SocketData data, byte[] b, Packet pkt) throws IOException {
 
-        mSelector.select(100);
+        //High timeout variable to combat racing conditions
+        mSelector.selectNow();
         Set allKey = VpnBypassService.mSelector.selectedKeys();
         Iterator<SelectionKey> keyIterator = allKey.iterator();
-        boolean newChannel = true;
         SelectionKey key;
 
-        //When channel is existent, send the packet
+        //If send queue is not empty, send queue first.
+        if (!mSendQueue.isEmpty()) {
+            QueuePacket qPkt = mSendQueue.poll();
+            if (sendPacket(qPkt.b, qPkt.pkt, qPkt.key)) {
+                if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Sending Packet from queue.");
+            }
+        }
+
+        //When channel is existent, send the packet, but drop the existing flow information
         while (keyIterator.hasNext()) {
             key = keyIterator.next();
             SocketData attachedFlow = (SocketData) key.attachment();
             if (attachedFlow.getSrcPort() == data.getSrcPort()) {
-                if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Sending channel " + attachedFlow.getSrcPort()
+                if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Channel " + attachedFlow.getSrcPort()
                         + ", isWritable:" + key.isWritable());
-                //If it is a tcp packet, handle the flow information
+
+                //If it is a TCP connection, handle the flow information
                 if (attachedFlow.getTransport() == SocketData.Transport.TCP) {
-                    //PacketGenerator.handleFlowAtSend((TcpFlow) attachedFlow, pkt.getHeader("TCP"), b.length - attachedFlow.offset);
-                    key.attach(attachedFlow);
-                }
+
+                    //Process TCP flags and generate/write back control packets
+                    PacketGenerator.handleFlags((TcpFlow) attachedFlow, pkt.getHeader("TCP"));
+                    byte[] controlPacket = ConnectionHandler.handleFlags((TcpFlow) attachedFlow);
+                    if (controlPacket != null) {
+                        try {
+                            dumpPacket(controlPacket);
+                        } catch (StreamFormatException | SyntaxError e) {
+                            e.printStackTrace();
+                        }
+                        mOut.write(controlPacket);
+                        }
+                    }
+
                 //send
-                sendPacket(b, key);
-                newChannel = false;
+                sendPacket(b, pkt, key);
             }
         }
 
-        // If channel not existent, open it:
-        if (newChannel) {
+        // Create new Channel if no connection present and send it
+        if(!mChannels.contains(data.getSrcPort())){
+            newConnection(data, b, pkt);
+        }
+
+    }
+
+    /*
+    * Creates a new Datagram- or SocketChannel based on extracted flow data.
+    */
+    private void newConnection(SocketData data, byte[] b, Packet pkt) throws IOException {
+        SelectionKey key;
+
+        if (data.getTransport() == SocketData.Transport.UDP) {
             key = registerChannel(data);
             if (key == null) {
-                Log.e(Const.LOG_TAG, "Could not register Channel. ID: " + data.getSrcPort());
+                Log.e(Const.LOG_TAG, "Could not register Datagram Channel ID: " + data.getSrcPort());
             } else {
-                sendPacket(b, key);
+                sendPacket(b, pkt, key);
+            }
+
+            //Enhanced logic for TCP connection
+        } else if (data.getTransport() == SocketData.Transport.TCP) {
+            TcpFlow flow = (TcpFlow) data;
+            flow.offset = ConnectionHandler.getHeaderOffset(pkt);
+            PacketGenerator.initFlow(flow, pkt.getHeader("TCP"));
+
+            //Open channel if SYN flag present
+            if (flow.syn) {
+                key = registerChannel(flow);
+                mChannels.add(flow.getSrcPort());
+                if (key == null) {
+                    Log.e(Const.LOG_TAG, "Could not register Socket Channel ID: " + data.getSrcPort());
+                } else {
+                    sendPacket(b, pkt, key);
+                }
+            }
+
+            //Process TCP flags and generate/write back control packets
+            byte[] controlPacket = ConnectionHandler.handleFlags(flow);
+            if (controlPacket != null) {
+                try {
+                    dumpPacket(controlPacket);
+                } catch (StreamFormatException | SyntaxError e) {
+                    e.printStackTrace();
+                }
+                mOut.write(controlPacket);
             }
         }
 
-        //If send queue is not empty, send it.
-        //TODO: send more than one packet at a time!
-        if (!mSendQueue.isEmpty()) {
-            QueuePacket qPkt = mSendQueue.poll();
-            if (sendPacket(qPkt.b, qPkt.key)) {
-                if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Sending Packet from queue.");
-            } else {
-                if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Could not send Packet from Queue.");
-                //add packet at end of queue
-                mSendQueue.add(qPkt);
-            }
-        }
+
     }
 
     /*
      * Sends the packet out, if there's paylaod
      */
-    public static boolean sendPacket(byte[] b, SelectionKey key) throws IOException {
+    public static boolean sendPacket(byte[] b, Packet pkt, SelectionKey key) throws IOException {
         SocketData data = (SocketData) key.attachment();
+        data.offset = ConnectionHandler.getHeaderOffset(pkt);
         int payload = b.length - data.offset;
         if (payload > 0) {
             ByteBuffer bb = ByteBuffer.allocate(payload);
-            bb.put(b, data.offset, b.length - data.offset);
+            bb.put(b, data.offset, payload);
             bb.position(0);
 
+            //Send TCP
             if (data.getTransport() == SocketData.Transport.TCP) {
                 SocketChannel sChan = (SocketChannel) key.channel();
-                //Debug statement
                 if (!sChan.isConnected()) {
+                    if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Channel not yet connected, add packet to send queue");
                     sChan.finishConnect();
+                    mSendQueue.add(new QueuePacket(key,b, pkt));
                 } else {
-                    int sent = sChan.write(bb);
-                    if (Const.IS_DEBUG)
-                        Log.d(Const.LOG_TAG, "Sent " + sent + " of " + payload + " bytes to "
-                                + ToolBox.printHexBinary(data.getDstAdd()) + ":" + data.getDstPort() + "\n" + ToolBox.printExportHexString(b));
-                    return true;
+                    try{
+                        int sent = sChan.write(bb);
+                        if (Const.IS_DEBUG)
+                            Log.d(Const.LOG_TAG, "Channel ID: " + data.getSrcPort() + ", sent " + sent + " of " + payload + " bytes. :" + ToolBox.printExportHexString(bb.array()));
+                        PacketGenerator.handleFlowAtSend((TcpFlow)data, pkt.getHeader("TCP"), payload);
+                        return true;
+                    } catch (SocketException e){
+                        Log.e(Const.LOG_TAG, "SocketError - Reset connection ID:" + data.getSrcPort());
+                        PacketGenerator.forgeReset((TcpFlow)data);
+                        return false;
+                    }
                 }
-
-
-              /*  //TODO: Extract add to queue method with duplicate erasure
-                VpnBypassService.mSendQueue.add(new QueuePacket(key, b));
-                Log.d(Const.LOG_TAG, sChan.isConnected() + " Could not write to channel ID: " + data.getSrcPort() + ", adding packet to queue");
-                    return false;
-              */
+                //Send UDP
             } else if (data.getTransport() == SocketData.Transport.UDP) {
                 DatagramChannel dChan = (DatagramChannel) key.channel();
                 if (dChan.isConnected()) {
                     int sent = dChan.write(bb);
                     if (Const.IS_DEBUG)
-                        Log.d(Const.LOG_TAG, "Sent " + sent + " of " + payload + " bytes to "
-                                + ToolBox.printHexBinary(data.getDstAdd()) + ":" + data.getDstPort() + "\n" + ToolBox.printExportHexString(b));
+                        Log.d(Const.LOG_TAG, "Channel ID: " + data.getSrcPort() + ", sent " + sent + " of " + payload + " bytes.");
                     return true;
                 } else {
-                    /*
-                    //TODO: Extract add to queue method with duplicate erasure
-                    VpnBypassService.mSendQueue.add(new QueuePacket(key, b));
-                    */
-
                     Log.d(Const.LOG_TAG, "Could not write to channel ID: " + data.getSrcPort() + ", adding packet to queue");
                     return false;
                 }
@@ -359,9 +403,6 @@ public class VpnBypassService  extends VpnService {
         }
         return false;
     }
-
-
-
 
     /*
     * Register, connect and protect the Channel by flow-data
@@ -406,9 +447,8 @@ public class VpnBypassService  extends VpnService {
     /*
     * If there is readable data at the channels, a forged packet based on the flow data will be returned.
     */
-    public byte[] ManageReceiving() throws IOException, StreamFormatException, SyntaxError {
+    public byte[]  ManageReceiving() throws IOException, StreamFormatException, SyntaxError {
 
-        //TODO: TCP Flow control!
         mSelector.selectNow();
         Set<SelectionKey> keySet = VpnBypassService.mSelector.selectedKeys();
         Iterator<SelectionKey> keyIterator = keySet.iterator();
@@ -417,18 +457,23 @@ public class VpnBypassService  extends VpnService {
         while (keyIterator.hasNext()) {
             SelectionKey key = keyIterator.next();
             SocketData data = (SocketData) key.attachment();
-            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"Receiving channel " + data.getSrcPort()
-                    + " status: isReadable:" + key.isReadable());
+           // if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"Receiving channel " + data.getSrcPort()
+             //       + " status: isReadable:" + key.isReadable());
             if(key.isReadable()) {
                 ByteBuffer bb = ByteBuffer.allocate(65535);
                 int read = 0;
                 if (data.getTransport() == SocketData.Transport.TCP) {
                     TcpFlow flow = (TcpFlow) data;
                     SocketChannel sChan = (SocketChannel) key.channel();
-                    read = sChan.read(bb);
-                }
-                if (data.getTransport() == SocketData.Transport.UDP) {
+                    if (sChan.isConnected()){
+                        read = sChan.read(bb);
+                    } else{
+                        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Channel ID: " + data.getSrcPort() + " not connected. Scheduled to cancel connection.");
+                        data.isGarbage = true;
+                        data.isOpen = false;
+                    }
 
+                } else if (data.getTransport() == SocketData.Transport.UDP) {
                     DatagramChannel sChan = (DatagramChannel) key.channel();
                     read = sChan.read(bb);
                 }
@@ -439,24 +484,21 @@ public class VpnBypassService  extends VpnService {
 
                     bb.position(0);
                     bb.get(b);
-                    b = PacketGenerator.generatePacket(data, b);
+                    b = PacketGenerator.generatePacket(data, b, (byte)0x10);
 
                     //Dump what has ben read
                     Packet pkt = dumpPacket(b);
 
                     //If TCP, write back flow information.
                     if(data.getTransport() == SocketData.Transport.TCP){
-                        PacketGenerator.handleFlowAtRecieve((TcpFlow)data, pkt.getHeader("TCP"), read);
-                        key.attach(data);
+                        PacketGenerator.handleFlowAtRecieve((TcpFlow) data, pkt.getHeader("TCP"), read);
                     }
-                    if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, read + " Bytes read from channel ID "
-                            + data.getSrcPort()+": " + ToolBox.printExportHexString(b));
-
-                    ConnectionHandler.garbageChannels(pkt);
+                    if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Channel ID: " + data.getSrcPort()
+                            + ": " + read + " Bytes read. ");
                     return b;
                 }
                 else if (read == 0){
-                    if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "No bytes ready to read at channel ID: " + data.getSrcPort());
+                    //if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "No bytes ready to read at channel ID: " + data.getSrcPort());
                 }
                 else if (read < 0){
                     if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Could not read from channel ID: " + data.getSrcPort());
@@ -466,6 +508,75 @@ public class VpnBypassService  extends VpnService {
 
         }
         return null;
+    }
+
+    /*
+    * Kills channels if expired or void
+    */
+    public void garbageChannels() throws IOException {
+        // Timeout for garbage channels
+        Timestamp time;
+        Set<SelectionKey> allKeys = VpnBypassService.mSelector.keys();
+        Iterator<SelectionKey> keyIterator = allKeys.iterator();
+        SelectionKey key;
+        while (keyIterator.hasNext()) {
+            key = keyIterator.next();
+            SocketData data = (SocketData) key.attachment();
+            if (data.isGarbage) {
+
+                if (data.getTransport() == SocketData.Transport.TCP) {
+                    time = new Timestamp(System.currentTimeMillis() - Const.CHANNEL_TIMEOUT_TCP);
+                    TcpFlow flow = (TcpFlow) data;
+
+                    //Connection breakdown (FIN)
+                    if (flow.isBreakdown && time.after(data.getTime())) {
+                        byte[] b = PacketGenerator.forgeFin(flow);
+                        try {
+                            dumpPacket(b);
+                        } catch (StreamFormatException | SyntaxError e) {
+                            e.printStackTrace();
+                        }
+                        mOut.write(b);
+
+                        if (Const.IS_DEBUG)
+                            Log.d(Const.LOG_TAG, "Connection Breakdown of Channel ID = " + data.getSrcPort());
+                        key.channel().close();
+                        key.cancel();
+                        mChannels.remove(data.getSrcPort());
+                    }
+
+                    //Connection reset (RST)
+                    if(!flow.isBreakdown){
+                        Log.d(Const.LOG_TAG, "Connection Kill of Channel ID = " + data.getSrcPort());
+                        key.channel().close();
+                        key.cancel();
+                        mChannels.remove(data.getSrcPort());
+                    }
+
+
+                } else if (data.getTransport() == SocketData.Transport.UDP) {
+                    time = new Timestamp(System.currentTimeMillis() - Const.CHANNEL_TIMEOUT_UDP);
+
+                    //Timeout Destroy
+                    if (time.after(data.getTime())) {
+                        if (Const.IS_DEBUG)
+                            Log.d(Const.LOG_TAG, "Timeout closing UDP Channel ID = " + data.getSrcPort());
+                        key.channel().close();
+                        key.cancel();
+                        mChannels.remove(data.getSrcPort());
+                    }
+
+                    //Close Destroy
+                    if(!data.isOpen){
+                        if (Const.IS_DEBUG)
+                            Log.d(Const.LOG_TAG, "Kill UDP Channel ID = " + data.getSrcPort());
+                        key.channel().close();
+                        key.cancel();
+                        mChannels.remove(data.getSrcPort());
+                    }
+                }
+            }
+        }
     }
 
 }

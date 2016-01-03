@@ -1,5 +1,7 @@
 package de.felixschiller.tlsmetric.helper;
 
+import com.voytechs.jnetstream.codec.Packet;
+
 import java.nio.channels.SelectionKey;
 
 /**
@@ -7,9 +9,11 @@ import java.nio.channels.SelectionKey;
  */
 public class QueuePacket {
     public SelectionKey key;
+    public Packet pkt;
     public byte[] b;
-    public QueuePacket(SelectionKey key, byte[] b){
+    public QueuePacket(SelectionKey key, byte[] b, Packet pkt){
         this.key = key;
         this.b = b;
+        this.pkt = pkt;
     }
 }

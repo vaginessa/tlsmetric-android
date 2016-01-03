@@ -4,20 +4,11 @@ import android.util.Log;
 
 import com.voytechs.jnetstream.codec.Header;
 
-import org.jnetpcap.protocol.network.Ip4;
 
-import java.io.IOException;
-import java.net.Socket;
+
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.sql.Timestamp;
-import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Set;
-
-import de.felixschiller.tlsmetric.modules.ConnectionHandler;
-import de.felixschiller.tlsmetric.modules.ToolBox;
-import de.felixschiller.tlsmetric.modules.VpnBypassService;
+import java.util.Queue;
 
 /**
  * Generates Answering Packages
@@ -78,13 +69,13 @@ public class PacketGenerator {
     private static final byte[] sUdpDummy = hexStringToByteArray("111122220072fc42");
 
     //Generates packets based on stored connection data.
-    public static byte[] generatePacket(SocketData data, byte[] b){
+    public static byte[] generatePacket(SocketData data, byte[] b, byte flag){
         if(data.getIpVersion() == 4){
             if(data.getTransport() == SocketData.Transport.TCP){
                 //Generate a ip(tcp(payload)) packet with connection data and checksum
                 int length = sIp4Dummy.length + sTcpDummy.length + b.length;
                 ByteBuffer bb = ByteBuffer.allocate(length);
-                byte[] ipPayload = forgeTCP((TcpFlow)data, b);
+                byte[] ipPayload = forgeTCP((TcpFlow)data, b, flag);
                 bb.put(forgeIp4(data, ipPayload));
                 return bb.array();
             }
@@ -97,6 +88,8 @@ public class PacketGenerator {
                 return bb.array();
             }
         }
+
+        //TODO: IPv6 Implementation
         else if(data.getIpVersion() == 6) {
             if(data.getTransport() == SocketData.Transport.TCP){
                 //Generate a ip(tcp(payload)) packet with connection data and checksum
@@ -158,7 +151,8 @@ public class PacketGenerator {
         //TODO: implement
         return null;
     }
-    public static byte[] forgeTCP(TcpFlow data, byte[] payload){
+
+    public static byte[] forgeTCP(TcpFlow data, byte[] payload, Byte flag){
         int length =  sTcpDummy.length + payload.length;
         //ByteBuffers for assembling and int-conversion.
         ByteBuffer bb = ByteBuffer.allocate(length);
@@ -166,6 +160,7 @@ public class PacketGenerator {
         bb.put(sTcpDummy);
         bb.put(payload);
         bb.position(0);
+
         //fill source and destination ports
         bint.putInt(data.getDstPort());
         bb.put(bint.array(), 2, 2);
@@ -188,13 +183,16 @@ public class PacketGenerator {
         long inc = fourBytesToLong(tcpIncrementer(data.ackNr, payload.length));
         if(!(inc == fourBytesToLong(data.seqNr))){
          data.seqQueue.add(longToFourBytes(inc));
-
         }
-        //Flags for ACK are set in dummy
+
+        //set the flag code
+        bb.position(13);
+        bb.put(flag);
+
         //Checksum generation
         byte[] pseudoHeader = generatePseudoHeader(data, bb.array());
-        byte[] cs = longToFourBytes(computeChecksum(pseudoHeader)-2);
-            bb.position(16);
+        byte[] cs = longToFourBytes(computeChecksum(pseudoHeader));
+        bb.position(16);
             bb.put(cs, 2, 2);
         return bb.array();
     }
@@ -235,35 +233,61 @@ public class PacketGenerator {
         }
         return b;
     }
-
-    /*
-     * TCP flow control and packet forging logic methods for transmitting packages.
-     */
-    public static void handleFlowAtSend(TcpFlow data, Header header, int payloadLen){
-        if (data.seqNr == null) {
-            data.seqNr = longToFourBytes((long) header.getValue("seq"));
-        }
-        if (data.ackNr == null) {
-            data.ackNr = longToFourBytes((long) header.getValue("seq"));
-        }
+    public static void handleFlags(TcpFlow data, Header header) {
         data.flags = intToTwoBytes((int) header.getValue("code"));
         data.fin = ((data.flags[1] & (byte) 0x01) != (byte) 0x00);
         data.syn = ((data.flags[1] & (byte) 0x02) != (byte) 0x00);
         data.rst = ((data.flags[1] & (byte) 0x04) != (byte) 0x00);
-        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Handle Flow of channel id: " + data.getSrcPort()
-                + ", seq: " + header.getValue("seq") + ". Flags: fin " + data.fin + " syn " + data.syn + " rst "
-                + data.rst + " payload length: " + payloadLen);
+    }
 
+    public static void initFlow(TcpFlow data, Header header){
+        //generate initial ACK and SEQ NR
+        if (data.seqNr == null) {
+            if ((long) header.getValue("ack") != 0){
+                data.seqNr = longToFourBytes((long) header.getValue("ack"));
+            } else {
+                data.seqNr = longToFourBytes((long) header.getValue("seq"));
+            }
+        }
+        if (data.ackNr == null) {
+            data.ackNr = longToFourBytes((long) header.getValue("seq"));
+        }
+        handleFlags(data, header);
+    }
+    /*
+     * TCP flow control and packet forging logic methods for transmitting packages.
+     */
+    public static void handleFlowAtSend(TcpFlow data, Header header, int payloadLen){
+
+        //generate initial ACK and SEQ NR
+        if (data.seqNr == null) {
+            if ((long) header.getValue("ack") != 0){
+                data.seqNr = longToFourBytes((long) header.getValue("ack"));
+            } else {
+                data.seqNr = longToFourBytes((long) header.getValue("seq"));
+            }
+        }
+        if (data.ackNr == null) {
+            data.ackNr = longToFourBytes((long) header.getValue("seq"));
+        }
+
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Handle Flow of channel id: " + data.getSrcPort()
+                + " payload length: " + payloadLen);
+
+        //Add next expected acknowledgement number to queue
         long inc = fourBytesToLong(tcpIncrementer(longToFourBytes((long)header.getValue("seq")), payloadLen));
         if(!(inc == fourBytesToLong(data.ackNr))){
             data.ackQueue.add(longToFourBytes(inc));
         }
+
+        handleFlags(data, header);
     }
+
     /*
      * TCP flow control and packet forging logic methods called after receiving packages.
      */
     public static void handleFlowAtRecieve(TcpFlow data, Header header, int payloadLen){
-        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Handle receiving Flow");
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Handle receiving Flow, payload: " + payloadLen + " Bytes.");
 
         long inc = fourBytesToLong(tcpIncrementer(data.seqNr, payloadLen));
         if(!(inc == fourBytesToLong(data.seqNr))){
@@ -271,6 +295,7 @@ public class PacketGenerator {
         }
     }
 
+    //Establish a connection by forging a SYN-ACK control package
     public static byte[] forgeHandshake(TcpFlow flow){
 
         //Clear ack and seq queues
@@ -279,9 +304,9 @@ public class PacketGenerator {
 
         //Increment Ack + 1 and generate Answer
         flow.ackNr = tcpIncrementer(flow.ackNr, 1);
-        byte[] synAck = generatePacket(flow, new byte[]{});
+        byte flag = (byte)0x12;
+        byte[] synAck = generatePacket(flow, new byte[]{}, flag);
         //create syn/ack flag
-        synAck[33] = (byte)0x12;
         //Increment Seq + 1 and set Ignore Next Packet
         flow.seqNr = tcpIncrementer(flow.seqNr, 1);
         //Set the flow to handshake completed
@@ -289,41 +314,48 @@ public class PacketGenerator {
         return synAck;
     }
 
-    public static byte[] forgeBreakdown(TcpFlow flow){
+    //Increment Ack = SYN + 1; SYN = ACK and generate ACK control packet
+    public static byte[] forgeBreakdown(TcpFlow flow) {
+            //Add at head of ACK queue
+            if (flow.ackQueue.isEmpty()) {
+                flow.ackQueue.add(tcpIncrementer(flow.seqNr, 1));
+            }else {
+                Queue<byte[]> newQ = new LinkedList<>();
+                newQ.add(tcpIncrementer(flow.seqNr, 1));
+                while (!flow.ackQueue.isEmpty()) {
+                    newQ.add(flow.ackQueue.poll());
+                }
+                flow.ackQueue = newQ;
+            }
 
-        //Clear ack and seq queues
-        flow.ackQueue = new LinkedList<>();
-        flow.seqQueue = new LinkedList<>();
+        //Set flow to closed and destroyed
+        flow.isOpen = false;
+        flow.isGarbage = true;
+        flow.isBreakdown = true;
 
-        if(flow.flags[0] == (byte)0x11){
-            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"ACK_FIN detected");
-            //Increment Ack = SYN + 1; SYN = ACK and generate Answer
-            byte[] seq = flow.ackNr;
-            flow.ackNr = tcpIncrementer(flow.seqNr, 1);
-            flow.seqNr = seq;
-            byte[] fin = generatePacket(flow, new byte[]{});
-            //create FIN flag
-            fin[33] = (byte)0x10;
-            flow.isOpen = false;
-            return fin;
-        }
-
-        if(flow.flags[0] == (byte)0x11){
-            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"FIN detected");
-            //Increment Ack = SYN + 1; SYN = ACK and generate Answer
-            byte[] seq = flow.ackNr;
-            flow.ackNr = tcpIncrementer(flow.seqNr, 1);
-            flow.seqNr = seq;
-            byte[] fin = generatePacket(flow, new byte[]{});
-            //create FIN flag
-            fin[33] = (byte)0x01;
-            flow.isOpen = false;
-            return fin;
-        }
-
-        return null;
+        flow.touchTime();
+        byte[] ack = generatePacket(flow, new byte[]{}, (byte)0x10);
+        return ack;
     }
 
+    //Generate control packet with FIN flag
+    public static byte[] forgeFin(TcpFlow flow){
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"Sending ACK-FIN");
+            return generatePacket(flow, new byte[]{}, (byte)0x11);
+    }
+
+    //Generate control packet with RST flag
+    public static byte[] forgeReset(TcpFlow flow){
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"Sending ACK-FIN");
+
+        flow.isOpen = false;
+        flow.isGarbage = true;
+        flow.isBreakdown = false;
+
+        return generatePacket(flow, new byte[]{}, (byte)0x04);
+    }
+
+    //Increments a seq or ack number by the given offset, normally the packet length
     public static byte[] tcpIncrementer(byte[] number, int offset) {
         //ByteBuffer to convert the Int-s
         ByteBuffer bb = ByteBuffer.allocate(8);

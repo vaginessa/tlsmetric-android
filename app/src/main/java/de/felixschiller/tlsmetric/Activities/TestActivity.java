@@ -147,8 +147,7 @@ public class TestActivity extends AppCompatActivity {
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
-            Intent intent = new Intent(this, VpnBypassService.class);
-            startService(intent);
+            VpnBypassService.start(this);
         }
     }
 
