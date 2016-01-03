@@ -1,15 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding">
-    <file url="file://$PROJECT_DIR$/app/libs" charset="windows-1252" />
-    <file url="file://$PROJECT_DIR$/app/libs/JNetStream.jar" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/libs/JNetStreamProtocols.jar" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/libs/RootTools.jar" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/libs/commons-logging-1.1.1.jar" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/libs/json_simple-1.1.jar" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/libs/log4j-over-slf4j-1.6.4.jar" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/libs/slf4j-android-1.6.1-RC1.jar" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/src/main/java/de/felixschiller/tlsmetric/helper/ExecuteCommand.java" charset="windows-1252" />
     <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>
