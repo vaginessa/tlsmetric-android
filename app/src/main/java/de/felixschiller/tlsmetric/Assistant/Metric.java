@@ -1,4 +1,4 @@
-package de.felixschiller.tlsmetric.helper;
+package de.felixschiller.tlsmetric.Assistant;
 
 /**
  * Metric for warnings of found filter results.

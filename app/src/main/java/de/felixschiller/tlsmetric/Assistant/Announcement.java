@@ -1,4 +1,4 @@
-package de.felixschiller.tlsmetric.helper;
+package de.felixschiller.tlsmetric.Assistant;
 
 /**
  * Class with inforamtion for Warning

@@ -2,13 +2,12 @@ package de.felixschiller.tlsmetric;
 
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 
 
-import de.felixschiller.tlsmetric.helper.PacketGenerator;
-import de.felixschiller.tlsmetric.helper.TcpFlow;
-import de.felixschiller.tlsmetric.modules.ToolBox;
+import de.felixschiller.tlsmetric.VpnDump.PacketGenerator;
+import de.felixschiller.tlsmetric.VpnDump.TcpFlow;
+import de.felixschiller.tlsmetric.Assistant.ToolBox;
 
 import static org.junit.Assert.*;
 

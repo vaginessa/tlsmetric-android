@@ -1,11 +1,4 @@
-package de.felixschiller.tlsmetric.modules;
-
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.pm.PackageManager;
-
-import java.util.Iterator;
-import java.util.List;
+package de.felixschiller.tlsmetric.PacketAnalyze;
 
 /**
  * Created by schillef on 17.11.15.

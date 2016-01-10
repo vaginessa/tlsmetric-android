@@ -1,33 +1,30 @@
 package de.felixschiller.tlsmetric.Activities;
 
 import android.content.Intent;
-import android.net.VpnService;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
+import de.felixschiller.tlsmetric.Assistant.Const;
+import de.felixschiller.tlsmetric.Assistant.ToolBox;
 import de.felixschiller.tlsmetric.R;
-import de.felixschiller.tlsmetric.modules.CheckDependencies;
-import de.felixschiller.tlsmetric.helper.Const;
-import de.felixschiller.tlsmetric.modules.PacketProcessing;
-import de.felixschiller.tlsmetric.modules.ToolBox;
-import de.felixschiller.tlsmetric.modules.VpnBypassService;
+import de.felixschiller.tlsmetric.RootDump.CheckDependencies;
+import de.felixschiller.tlsmetric.VpnDump.VpnBypassService;
 
 public class TestActivity extends AppCompatActivity {
 
+    public static TestActivity sActivity;
     private ToolBox mTool = new ToolBox();
     private TextView mStatusText;
-    public static TestActivity sActivity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

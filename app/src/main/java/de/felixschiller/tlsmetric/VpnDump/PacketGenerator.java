@@ -1,14 +1,14 @@
-package de.felixschiller.tlsmetric.helper;
+package de.felixschiller.tlsmetric.VpnDump;
 
 import android.util.Log;
 
 import com.voytechs.jnetstream.codec.Header;
 
-
-
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
+
+import de.felixschiller.tlsmetric.Assistant.Const;
 
 /**
  * Generates Answering Packages
@@ -258,6 +258,8 @@ public class PacketGenerator {
      * TCP flow control and packet forging logic methods for transmitting packages.
      */
     public static void handleFlowAtSend(TcpFlow data, Header header, int payloadLen){
+        if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Handle Flow of channel id: " + data.getSrcPort()
+                + " payload length: " + payloadLen);
 
         //generate initial ACK and SEQ NR
         if (data.seqNr == null) {
@@ -271,8 +273,6 @@ public class PacketGenerator {
             data.ackNr = longToFourBytes((long) header.getValue("seq"));
         }
 
-        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Handle Flow of channel id: " + data.getSrcPort()
-                + " payload length: " + payloadLen);
 
         //Add next expected acknowledgement number to queue
         long inc = fourBytesToLong(tcpIncrementer(longToFourBytes((long)header.getValue("seq")), payloadLen));

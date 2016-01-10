@@ -1,4 +1,4 @@
-package de.felixschiller.tlsmetric.helper;
+package de.felixschiller.tlsmetric.VpnDump;
 
 import java.sql.Timestamp;
 import java.util.LinkedList;

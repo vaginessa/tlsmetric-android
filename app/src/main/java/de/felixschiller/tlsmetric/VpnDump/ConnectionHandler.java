@@ -1,4 +1,4 @@
-package de.felixschiller.tlsmetric.modules;
+package de.felixschiller.tlsmetric.VpnDump;
 
 import android.util.Log;
 
@@ -12,11 +12,7 @@ import java.sql.Timestamp;
 import java.util.Iterator;
 import java.util.Set;
 
-import de.felixschiller.tlsmetric.helper.Const;
-import de.felixschiller.tlsmetric.helper.PacketGenerator;
-import de.felixschiller.tlsmetric.helper.SocketData;
-import de.felixschiller.tlsmetric.helper.TcpFlow;
-import de.felixschiller.tlsmetric.helper.UdpFlow;
+import de.felixschiller.tlsmetric.Assistant.Const;
 
 /**
  * Connection Handler.. what more to say
