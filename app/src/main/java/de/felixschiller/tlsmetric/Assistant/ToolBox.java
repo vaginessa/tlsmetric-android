@@ -22,23 +22,9 @@ import de.felixschiller.tlsmetric.R;
 public class ToolBox{
 
     private static final char[] hexCode = "0123456789ABCDEF".toCharArray();
-    private static File mFile;
-    private static String mBinPath;
-    private static String mFilePath;
 
-    public static void initPaths(Context context){
-        mFile = new File(context.getFilesDir(), Const.FILE_PCAP);
-        mBinPath = context.getFilesDir().getAbsolutePath() + File.separator + Const.FILE_TCPDUMP;
-        mFilePath = context.getFilesDir().getAbsolutePath() + File.separator + Const.FILE_PCAP;
-    }
 
-    public static File getDumpFile(){
-            return mFile;
-    }
 
-    public static String getDumpFileString(){
-        return mFilePath;
-    }
 
     public static String printHexBinary(byte[] data) {
         StringBuilder r = new StringBuilder(data.length * 2);
@@ -79,54 +65,6 @@ public class ToolBox{
         ExecuteCommand.user("netcfg | grep UP -> " + filePath);
         String result = ExecuteCommand.userForResult("cat " + filePath);
         return result;
-    }
-
-    //copy the tcpdump binary to /system/bin folder
-    public void deployTcpDump(Context context){
-        String binPath = context.getFilesDir().getAbsolutePath() + File.separator + Const.FILE_TCPDUMP;
-        File file = new File(binPath);
-        try {
-            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Extract tcpdump.");
-            InputStream in = context.getResources().openRawResource(R.raw.tcpdump);
-            byte[] buffer = new byte[in.available()];
-            in.read(buffer);
-            OutputStream out = new FileOutputStream(binPath);
-            out.write(buffer);
-        } catch (Exception e) {
-            Log.e(Const.LOG_TAG, "Deserialization of binary files failed", e);
-        }
-        ExecuteCommand.user("chmod 6755 " + mBinPath);
-    }
-
-    /*Run dump on active interface.
-    -----------------------------------------------------------------
-     *SYNOPSIS
-
-       tcpdump [ -AdDeflLnNOpqRStuUvxX ] [ -c count ]
-               [ -C file_size ] [ -F file ]
-               [ -i interface ] [ -m module ] [ -M secret ] [ -r file ]
-               [ -s snaplen ] [ -T type ] [ -w file ]
-               [ -W filecount ] [ -E spi@ipaddr algo:secret,...  ]
-               [ -y datalinktype ] [ -Z user ]
-      [ expression ]
-     */
-    public void runTcpDump(Context context){
-        String parameter = " -w " + Const.FILE_PCAP;
-        Command command = new Command(3, mBinPath);
-        try {
-            RootTools.getShell(true).add(command);
-        } catch (IOException | TimeoutException | RootDeniedException e) {
-            e.printStackTrace();
-        }
-        //RootTools.runBinary(context, mBinPath, "");
-        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, mBinPath);
-    }
-
-    //Run dump on specific interface.
-    public void stopTcpDump(){
-        //Kill it with Fire!
-        //userCommand.doCommand(0, "kill -s 1 tcpdump");
-        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "kill -s 1 tcpdump");
     }
 
     private int hexToBin(char ch) {

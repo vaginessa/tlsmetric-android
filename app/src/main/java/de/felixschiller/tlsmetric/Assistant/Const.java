@@ -14,8 +14,11 @@ public interface Const {
 
     String LOG_TAG = "TLSMetric";
     String FILE_IF_LIST = "iflist";
+
+    //File info for AnalyzerService
     String FILE_TCPDUMP = "tcpdump";
     String FILE_PCAP = "dump.pcap";
+    String PARAMS = "-w";
 
 
 }
