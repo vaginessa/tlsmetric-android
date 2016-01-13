@@ -10,6 +10,8 @@ import android.widget.Toast;
 import com.voytechs.jnetstream.codec.Decoder;
 import com.voytechs.jnetstream.codec.Packet;
 
+import com.voytechs.jnetstream.io.EOPacketStream;
+import com.voytechs.jnetstream.io.RawformatInputStream;
 import com.voytechs.jnetstream.io.StreamFormatException;
 import com.voytechs.jnetstream.npl.SyntaxError;
 
@@ -27,6 +29,7 @@ public class AnalyzerService extends Service {
 
     private Thread mThread;
     private Decoder mDecoder;
+    private RawformatInputStream mRawIn;
     private boolean isVpn;
 
     @Override
@@ -37,12 +40,13 @@ public class AnalyzerService extends Service {
         } else {
             File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_PCAP);
             if(file.exists()) {
-                mDecoder = new Decoder(file.getAbsolutePath());
+                mRawIn = new RawformatInputStream(file.getAbsolutePath());
+                mDecoder = new Decoder(mRawIn);
             } else{
-                Log.e(Const.LOG_TAG, "Could not find PCAP file " + file.getAbsolutePath());
+                Log.e(Const.LOG_TAG, "Could not find raw Dump file " + file.getAbsolutePath());
             }
         }
-        } catch (IOException | SyntaxError e) {
+        } catch (IOException | SyntaxError | EOPacketStream | StreamFormatException e) {
             e.printStackTrace();
         }
     }
@@ -99,12 +103,17 @@ public class AnalyzerService extends Service {
     }
 
     private Packet dumpNext() throws StreamFormatException, IOException, SyntaxError{
+        Packet pkt;
         if(isVpn){
             //TODO: read from CloneBuffer
             return null;
         } else {
             //read from pcapFile
-            return mDecoder.nextPacket();
+            if((pkt = mDecoder.nextPacket()) != null){
+                return mDecoder.nextPacket();
+            } else{
+                return null;
+            }
         }
 
     }

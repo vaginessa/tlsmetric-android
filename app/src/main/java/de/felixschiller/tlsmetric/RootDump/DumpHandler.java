@@ -1,6 +1,7 @@
 package de.felixschiller.tlsmetric.RootDump;
 
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -16,6 +17,7 @@ import java.io.OutputStream;
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.Assistant.ExecuteCommand;
+import de.felixschiller.tlsmetric.PacketAnalyze.AnalyzerService;
 import de.felixschiller.tlsmetric.R;
 
 /**
@@ -48,7 +50,8 @@ public class DumpHandler {
         String command = DumpHandler.generateCommand();
         //Start tcp dump with su rights
         if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Start tcpdump. : " + command);
-        try{
+        ExecuteCommand.sudo(command);
+        /*try{
             Process su = Runtime.getRuntime().exec("su");
             DataOutputStream os = new DataOutputStream(su.getOutputStream());
             os.writeBytes(command);
@@ -58,7 +61,7 @@ public class DumpHandler {
             os.close();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
 
     }
 
@@ -85,7 +88,8 @@ public class DumpHandler {
         } catch (Exception e) {
             Log.e(Const.LOG_TAG, "Deserialization of binary files failed", e);
         }
-        ExecuteCommand.user("chmod 6755 " + mBinPath);}
+        ExecuteCommand.user("chmod 6755 " + mBinPath);
+    }
 
         /*Run dump on active interface.
     -----------------------------------------------------------------
@@ -101,11 +105,7 @@ public class DumpHandler {
      */
 
     public static String generateCommand() {
-        String command = mBinPath + " -w " + mFilePath + " &";
-        //"/data/local/tcpdump-arm -l -i eth0 > /data/local/output.txt\n"
-
-        return command;
-        //return "\""+mBinPath + " " + Const.PARAMS + " " + Const.FILE_PCAP + "\"";
+        return mBinPath + " " + Const.PARAMS + " " + mFilePath + " &";
     }
 
     public static void deletePcapFile(){
@@ -119,13 +119,40 @@ public class DumpHandler {
     private static void deleteFile(File file){
         try{
             if(file.delete()){
-                System.out.println(file.getName() + " is deleted!");
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, file.getName() + " is deleted!");
             }else{
-                System.out.println("Delete operation is failed.");
+                Log.e(Const.LOG_TAG, "Delete operation failed!");
             }
         }catch(Exception e){
             e.printStackTrace();
         }
+    }
+
+    public void startAnalyzerService(){
+        for(int i = 0; i < 10; i++){
+            if(mFile.exists()) {
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Dump file present, edit permissions.");
+                ExecuteCommand.sudo("chmod 6755 " + mFilePath);
+                Intent intent = new Intent(ContextSingleton.getContext(), AnalyzerService.class);
+                ContextSingleton.getActivity().startService(intent);
+                break;
+            } else {
+                Log.i(Const.LOG_TAG, mFile.getAbsolutePath() + "does not exist. Wait for dump process " + (10 - i) + " times...");
+                if(i == 9) {
+                    Log.e(Const.LOG_TAG, mFile.getAbsolutePath() + "does not exist. Service not started");
+                }
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void stopAnalyzerService(){
+        Intent intent = new Intent(ContextSingleton.getContext(), AnalyzerService.class);
+        ContextSingleton.getContext().stopService(intent);
     }
 
 

@@ -35,20 +35,14 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test);
+
+        //TODO: Change Sudo tests
         // Test for Root Acces and Logging
         CheckDependencies checkDependencies = new CheckDependencies();
         checkDependencies.testAll();
 
         mStatusText = (TextView) findViewById(R.id.testText);
-//      mHandler.postDelayed(mUpdateStatusView, 100);
 
-        // start VPN client
-        Intent intent = VpnBypassService.prepare(getApplicationContext());
-        if (intent != null) {
-            startActivityForResult(intent, 0);
-        } else {
-            onActivityResult(0, RESULT_OK, null);
-        }
 
         Button buttStart = (Button) findViewById(R.id.fabStart);
         buttStart.setOnClickListener(new View.OnClickListener() {
@@ -85,10 +79,10 @@ public class MainActivity extends AppCompatActivity {
         startDump.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Start TCPDump AnalyzerService.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                Snackbar.make(view, "Start TLSMetric(Root) Service.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
                 mDumpHandler = new DumpHandler();
                 mDumpHandler.start();
-
+                mDumpHandler.startAnalyzerService();
             }
         });
 
@@ -96,18 +90,11 @@ public class MainActivity extends AppCompatActivity {
         stopDump.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO: Fill
+                Snackbar.make(view, "Stop TLSMetric(Root) Service", Snackbar.LENGTH_LONG).setAction("Action", null).show();
+                mDumpHandler.stopAnalyzerService();
+                mDumpHandler.stop();
             }
         });
-
-        Button startProcessing = (Button) findViewById(R.id.startProcessing);
-        startProcessing.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //TODO: Fill
-            }
-        });
-
     }
 
     @Override
