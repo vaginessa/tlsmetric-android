@@ -13,6 +13,7 @@ import com.voytechs.jnetstream.codec.Packet;
 import com.voytechs.jnetstream.io.EOPacketStream;
 import com.voytechs.jnetstream.io.RawformatInputStream;
 import com.voytechs.jnetstream.io.StreamFormatException;
+import com.voytechs.jnetstream.npl.NodeException;
 import com.voytechs.jnetstream.npl.SyntaxError;
 
 import java.io.File;
@@ -20,6 +21,7 @@ import java.io.IOException;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
+import de.felixschiller.tlsmetric.RootDump.DumpHandler;
 
 
 /**
@@ -30,10 +32,12 @@ public class AnalyzerService extends Service {
     private Thread mThread;
     private Decoder mDecoder;
     private RawformatInputStream mRawIn;
+    public static boolean mInterrupt;
     private boolean isVpn;
 
     @Override
     public void onCreate() {
+        mInterrupt = false;
         try {
         if(isVpn){
             //TODO: Init mDecoder set to CloneBuffer
@@ -64,15 +68,24 @@ public class AnalyzerService extends Service {
             public void run() {
                 try {
                     Packet packet;
-                    while ((packet = dumpNext()) != null) {
-                        analyzePacket(packet);
+                    while (!mInterrupt) {
+                        packet = dumpNext();
+                        if(packet != null){
+                            analyzePacket(packet);
+                            Thread.sleep(50);
+                        } else {
+                            Thread.sleep(500);
+                        }
                     }
-                    Thread.sleep(50);
                 } catch (StreamFormatException | SyntaxError | IOException | InterruptedException e) {
                     e.printStackTrace();
+                } catch (EOPacketStream e){
+                    e.printStackTrace();
                 }
+                if(mInterrupt)mThread.interrupt();
+                stopSelf();
             }
-        }, "NetworkDumpRunnable");
+        }, "AnalyzerThreadRunnable");
 
         //start the service
         mThread.start();
@@ -81,9 +94,8 @@ public class AnalyzerService extends Service {
 
     @Override
     public void onDestroy() {
-        //TODO: rm pcap file
-        // Tell the user we stopped.
-        Toast.makeText(this, "Dump Service Stopped", Toast.LENGTH_SHORT).show();
+        DumpHandler.deletePcapFile();
+        Toast.makeText(this, "TLSMetric service stopped", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -102,19 +114,23 @@ public class AnalyzerService extends Service {
         }
     }
 
-    private Packet dumpNext() throws StreamFormatException, IOException, SyntaxError{
+    private Packet dumpNext() throws StreamFormatException, IOException, SyntaxError, EOPacketStream{
         Packet pkt;
         if(isVpn){
-            //TODO: read from CloneBuffer
+            //TODO: VPN branch - read from CloneBuffer
             return null;
         } else {
-            //read from pcapFile
-            if((pkt = mDecoder.nextPacket()) != null){
-                return mDecoder.nextPacket();
-            } else{
+            //read from DumpFile
+            try{
+                if ((pkt = mDecoder.nextPacket()) != null) {
+                    return pkt;
+                }
+            } catch(NullPointerException e){
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "End of File, taking a little break...");
                 return null;
             }
         }
+        return null;
 
     }
 

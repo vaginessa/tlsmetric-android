@@ -51,18 +51,6 @@ public class DumpHandler {
         //Start tcp dump with su rights
         if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Start tcpdump. : " + command);
         ExecuteCommand.sudo(command);
-        /*try{
-            Process su = Runtime.getRuntime().exec("su");
-            DataOutputStream os = new DataOutputStream(su.getOutputStream());
-            os.writeBytes(command);
-            os.flush();
-            os.writeBytes("exit\n");
-            os.flush();
-            os.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
-
     }
 
     //stop the tcpdump process
@@ -142,7 +130,7 @@ public class DumpHandler {
                     Log.e(Const.LOG_TAG, mFile.getAbsolutePath() + "does not exist. Service not started");
                 }
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -151,8 +139,9 @@ public class DumpHandler {
     }
 
     public void stopAnalyzerService(){
-        Intent intent = new Intent(ContextSingleton.getContext(), AnalyzerService.class);
-        ContextSingleton.getContext().stopService(intent);
+        AnalyzerService.mInterrupt = true;
+        /*Intent intent = new Intent(ContextSingleton.getContext(), AnalyzerService.class);
+        ContextSingleton.getContext().stopService(intent);*/
     }
 
 

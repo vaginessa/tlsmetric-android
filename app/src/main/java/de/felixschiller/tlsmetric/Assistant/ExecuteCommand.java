@@ -7,8 +7,6 @@ import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.DatagramSocket;
-import java.net.Socket;
 
 /*
  * Handles the execution of shell commands.
@@ -60,12 +58,13 @@ public class ExecuteCommand extends Thread {
 
     //Execute a command as superuser. Test for su binary present required.
     public static void sudo(String... strings) {
-        if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Executing as sudo: " + strings);
+
         try {
             Process su = Runtime.getRuntime().exec("su");
             DataOutputStream outputStream = new DataOutputStream(su.getOutputStream());
 
             for (String s : strings) {
+                if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Executing as SU: " + s);
                 outputStream.writeBytes(s + "\n");
                 outputStream.flush();
             }
@@ -85,7 +84,6 @@ public class ExecuteCommand extends Thread {
 
     //Execute a command as superuser and get the command output. Test for su binary present required.
     public static String sudoForResult(String... strings) {
-        if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Executing as sudo for Results: " + strings);
         String res = "";
         DataOutputStream outputStream = null;
         InputStream response = null;
@@ -96,6 +94,7 @@ public class ExecuteCommand extends Thread {
             response = su.getInputStream();
 
             for (String s : strings) {
+                if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Executing as SU: " + s);
                 outputStream.writeBytes(s + "\n");
                 outputStream.flush();
             }
@@ -136,10 +135,6 @@ public class ExecuteCommand extends Thread {
                     Log.d(Const.LOG_TAG, "closing: " + x);
                     if (x instanceof Closeable) {
                         ((Closeable) x).close();
-                    } else if (x instanceof Socket) {
-                        ((Socket) x).close();
-                    } else if (x instanceof DatagramSocket) {
-                        ((DatagramSocket) x).close();
                     } else {
                         Log.d(Const.LOG_TAG, "cannot close: " + x);
                         throw new RuntimeException("cannot close " + x);
