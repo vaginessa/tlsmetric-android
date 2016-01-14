@@ -17,6 +17,7 @@ import com.voytechs.jnetstream.npl.NodeException;
 import com.voytechs.jnetstream.npl.SyntaxError;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
@@ -32,40 +33,39 @@ public class AnalyzerService extends Service {
     private Thread mThread;
     private Decoder mDecoder;
     private RawformatInputStream mRawIn;
+    private File mFilePath;
+    private long mBufferPosition;
+    private boolean mIsFileEmpty;
     public static boolean mInterrupt;
     private boolean isVpn;
 
     @Override
     public void onCreate() {
         mInterrupt = false;
-        try {
-        if(isVpn){
-            //TODO: Init mDecoder set to CloneBuffer
+        mBufferPosition = 0;
+
+        if(!isVpn){
+            mFilePath = new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_DUMP);
+            initDecoderWithDumpfile();
         } else {
-            File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_PCAP);
-            if(file.exists()) {
-                mRawIn = new RawformatInputStream(file.getAbsolutePath());
-                mDecoder = new Decoder(mRawIn);
-            } else{
-                Log.e(Const.LOG_TAG, "Could not find raw Dump file " + file.getAbsolutePath());
-            }
-        }
-        } catch (IOException | SyntaxError | EOPacketStream | StreamFormatException e) {
-            e.printStackTrace();
+            //TODO: Init mDecoder set to CloneBuffer
         }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i("LocalService", "Received start id " + startId + ": " + intent);
+
         // Stop the previous session by interrupting the thread.
         if (mThread != null) {
             mThread.interrupt();
         }
+
         //Analyzer working thread
         mThread = new Thread(new Runnable() {
             @Override
             public void run() {
+                //TODO: Restart dumping mechanism if file gets too big
                 try {
                     Packet packet;
                     while (!mInterrupt) {
@@ -75,11 +75,11 @@ public class AnalyzerService extends Service {
                             Thread.sleep(50);
                         } else {
                             Thread.sleep(500);
+                            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Reinitialize dumpfile");
+                            initDecoderWithDumpfile();
                         }
                     }
-                } catch (StreamFormatException | SyntaxError | IOException | InterruptedException e) {
-                    e.printStackTrace();
-                } catch (EOPacketStream e){
+                } catch (SyntaxError | IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
                 if(mInterrupt)mThread.interrupt();
@@ -94,7 +94,7 @@ public class AnalyzerService extends Service {
 
     @Override
     public void onDestroy() {
-        DumpHandler.deletePcapFile();
+        DumpHandler.deleteDumpFile();
         Toast.makeText(this, "TLSMetric service stopped", Toast.LENGTH_SHORT).show();
     }
 
@@ -114,28 +114,68 @@ public class AnalyzerService extends Service {
         }
     }
 
-    private Packet dumpNext() throws StreamFormatException, IOException, SyntaxError, EOPacketStream{
-        Packet pkt;
-        if(isVpn){
+    /*
+    * Returns the dumped Packet or null. Null means thread will sleep. If the dumpfile is empty a
+    * new initialization attempt will be made.
+     */
+    private Packet dumpNext() throws IOException, SyntaxError{
+
+        if(!isVpn && !mIsFileEmpty){
+                try {
+                    return mDecoder.nextPacket();
+                } catch(StreamFormatException e){
+                    if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "No complete Packet in file, taking a little break...");
+                    e.printStackTrace();
+                    return null;
+                }
+        } else if(mIsFileEmpty){
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "File is empty, try to init it again.");
+            initDecoderWithDumpfile();
+            return null;
+        } else if(isVpn){
             //TODO: VPN branch - read from CloneBuffer
             return null;
-        } else {
-            //read from DumpFile
-            try{
-                if ((pkt = mDecoder.nextPacket()) != null) {
-                    return pkt;
-                }
-            } catch(NullPointerException e){
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "End of File, taking a little break...");
-                return null;
-            }
         }
         return null;
-
     }
 
     private void analyzePacket(Packet pkt){
         //TODO: Analyzer Logic
         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, pkt.getSummary());
     }
+
+    private void checkEmptyFile(File file) {
+        try {
+            FileInputStream fis = new FileInputStream(file);
+            int b = fis.read();
+            if (b == -1) {
+                System.out.println("File " + file.getAbsolutePath() + " is empty!");
+                mIsFileEmpty = true;
+            } else {
+                mIsFileEmpty = false;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void initDecoderWithDumpfile() {
+        try {
+            if(mFilePath.exists()) {
+                checkEmptyFile(mFilePath);
+                if(!mIsFileEmpty) {
+                    mRawIn = new RawformatInputStream(mFilePath.getAbsolutePath());
+                    mRawIn.skip(mBufferPosition);
+                    mDecoder = new Decoder(mRawIn);
+
+                }
+            } else{
+                Log.e(Const.LOG_TAG, "Could not find raw Dump file " + mFilePath.getAbsolutePath());
+            }
+        } catch (IOException | SyntaxError | EOPacketStream | StreamFormatException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 }

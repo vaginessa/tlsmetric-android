@@ -7,10 +7,8 @@ import android.widget.Toast;
 
 import com.stericson.RootTools.RootTools;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -30,10 +28,10 @@ public class DumpHandler {
     private static String mFilePath;
 
     public DumpHandler(){
-        mFile = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_PCAP);
+        mFile = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
         mBin = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_TCPDUMP);
         mBinPath = ContextSingleton.getContext().getFilesDir().getAbsolutePath() + File.separator + Const.FILE_TCPDUMP;
-        mFilePath = ContextSingleton.getContext().getFilesDir().getAbsolutePath() + File.separator + Const.FILE_PCAP;
+        mFilePath = ContextSingleton.getContext().getFilesDir().getAbsolutePath() + File.separator + Const.FILE_DUMP;
     }
 
     //start the tcpdump process
@@ -44,12 +42,12 @@ public class DumpHandler {
             if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "tcpdump present.");
         }
         if (mFile.exists()){
-            deletePcapFile();
+            deleteDumpFile();
         }
 
         String command = DumpHandler.generateCommand();
         //Start tcp dump with su rights
-        if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Start tcpdump. : " + command);
+        if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Try to start tcpdump");
         ExecuteCommand.sudo(command);
     }
 
@@ -96,7 +94,7 @@ public class DumpHandler {
         return mBinPath + " " + Const.PARAMS + " " + mFilePath + " &";
     }
 
-    public static void deletePcapFile(){
+    public static void deleteDumpFile(){
         deleteFile(mFile);
     }
 
