@@ -1,5 +1,7 @@
 package de.felixschiller.tlsmetric.PacketAnalyze;
 
+import de.felixschiller.tlsmetric.Assistant.ToolBox;
+
 /**
  * Class for Filter rules
  */
@@ -28,6 +30,16 @@ public class Filter {
             this.severity = severity;
         }
         this.description = description;
+    }
+
+    public String getSummary() {
+        if (filterType == FilterType.IS_PRESENT) {
+            return filterType.toString() + ", " + protocol + ", " + severity + ", " + description;
+        } else if (filterType == FilterType.CONTAINS) {
+            return filterType.toString() + ", " + protocol + ", " + ToolBox.printHexBinary(value) + ", " + severity + ", " + description;
+        } else {
+            return "Filter invalid!";
+        }
     }
 
     public enum FilterType{

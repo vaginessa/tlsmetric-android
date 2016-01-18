@@ -1,23 +1,41 @@
 package de.felixschiller.tlsmetric.PacketAnalyze;
 
 
+import android.content.Context;
+import android.util.Log;
+
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.ListIterator;
 
+import de.felixschiller.tlsmetric.Assistant.Const;
+import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
+import de.felixschiller.tlsmetric.Assistant.ExecuteCommand;
 import de.felixschiller.tlsmetric.Assistant.ToolBox;
+import de.felixschiller.tlsmetric.R;
 
 /**
  * Holds filters for accessing from packet analyzer and can parses them from a given file.
  */
 public class FilterRules {
-    public static ArrayList<Filter> filterList = new ArrayList<>();
+    public static ArrayList<Filter> mFilterList = new ArrayList<>();
 
+    public FilterRules() {
+        deployFilterFile(ContextSingleton.getContext());
+        parseFilterList(new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_FILTER));
+        if (Const.IS_DEBUG) {
+            debugPrintFilterRules();
+        }
+    }
 
     public static void addFilter(Filter filter) {
-        filterList.add(filter);
+        mFilterList.add(filter);
     }
 
     public static void parseFilterList(File file){
@@ -53,6 +71,8 @@ public class FilterRules {
                 if(statement.charAt(i) == separator){
                     current++;
                     String result = statement.substring(position, i);
+                    position = i + 1;
+                    Log.e(Const.LOG_TAG, "Found: " + result);
                     switch (current)
                     {
                         case 1:
@@ -78,6 +98,7 @@ public class FilterRules {
             for(int i = 0; i < statement.length(); i++ ){
                 if(statement.charAt(i) == separator){
                     current++;
+                    position = i + 1;
                     String result = statement.substring(position, i);
                     switch (current)
                     {
@@ -89,20 +110,51 @@ public class FilterRules {
                         case 3:
                             severity = result;
                             break;
-                        case 4:
-                            description = result;
-                            break;
                         case 5:
                             value = result;
                             break;
+                        case 4:
+                            description = result;
+                            break;
+
                         default:
                             break;
                     }
                 }
             }
-            addFilter(new Filter(Filter.FilterType.CONTAINS, protocol, ToolBox.hexStringToByteArray(value), (short)(severity.charAt(0)), description));
+            try {
+                addFilter(new Filter(Filter.FilterType.CONTAINS, protocol, ToolBox.hexStringToByteArray(value), (short) (severity.charAt(0)), description));
+            } catch (NumberFormatException e) {
+                Log.e(Const.LOG_TAG, "Invalid filter rule -- Check for invalid HexString: " + value);
+                e.printStackTrace();
+            }
         }
     }
 
+    //Extract the filter file to /system/bin folder
+    public void deployFilterFile(Context context) {
+        File file = new File(context.getFilesDir(), Const.FILE_FILTER);
+        try {
+            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Extract filter.ini");
+            InputStream in = context.getResources().openRawResource(R.raw.filter);
+            byte[] buffer = new byte[in.available()];
+            in.read(buffer);
+            OutputStream out = new FileOutputStream(file);
+            out.write(buffer);
+        } catch (Exception e) {
+            Log.e(Const.LOG_TAG, "Deserialization of " + Const.FILE_FILTER + " failed", e);
+        }
+        ExecuteCommand.user("chmod 6755 " + file.getAbsolutePath());
+    }
 
+    public void debugPrintFilterRules() {
+        Log.i(Const.LOG_TAG, mFilterList.size() + " Filters in current ruleset.");
+        if (Const.IS_DEBUG) {
+            ListIterator ite = mFilterList.listIterator();
+            while (ite.hasNext()) {
+                Filter filter = (Filter) ite.next();
+                Log.d(Const.LOG_TAG, filter.getSummary());
+            }
+        }
+    }
 }

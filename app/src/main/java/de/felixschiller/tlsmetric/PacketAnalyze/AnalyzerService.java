@@ -9,11 +9,9 @@ import android.widget.Toast;
 
 import com.voytechs.jnetstream.codec.Decoder;
 import com.voytechs.jnetstream.codec.Packet;
-
 import com.voytechs.jnetstream.io.EOPacketStream;
 import com.voytechs.jnetstream.io.RawformatInputStream;
 import com.voytechs.jnetstream.io.StreamFormatException;
-import com.voytechs.jnetstream.npl.NodeException;
 import com.voytechs.jnetstream.npl.SyntaxError;
 
 import java.io.File;
@@ -30,22 +28,25 @@ import de.felixschiller.tlsmetric.RootDump.DumpHandler;
  */
 public class AnalyzerService extends Service {
 
+    public static boolean mInterrupt;
     private Thread mThread;
     private Decoder mDecoder;
     private RawformatInputStream mRawIn;
-    private File mFilePath;
+    private File mDumpFile;
     private long mBufferPosition;
     private boolean mIsFileEmpty;
-    public static boolean mInterrupt;
     private boolean isVpn;
+
+    private FilterRules mFilterRules;
 
     @Override
     public void onCreate() {
         mInterrupt = false;
         mBufferPosition = 0;
+        mFilterRules = new FilterRules();
 
         if(!isVpn){
-            mFilePath = new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_DUMP);
+            mDumpFile = new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_DUMP);
             initDecoderWithDumpfile();
         } else {
             //TODO: Init mDecoder set to CloneBuffer
@@ -104,35 +105,25 @@ public class AnalyzerService extends Service {
     }
 
     /*
-     * Class for clients to access.  Because we know this service always
-     * runs in the same process as its clients, we don't need to deal with
-     * IPC.
-     */
-    public class AnalyzerBinder extends Binder {
-        AnalyzerService getService() {
-            return AnalyzerService.this;
-        }
-    }
-
-    /*
     * Returns the dumped Packet or null. Null means thread will sleep. If the dumpfile is empty a
     * new initialization attempt will be made.
      */
-    private Packet dumpNext() throws IOException, SyntaxError{
+    private Packet dumpNext() throws IOException, SyntaxError {
 
-        if(!isVpn && !mIsFileEmpty){
-                try {
-                    return mDecoder.nextPacket();
-                } catch(StreamFormatException e){
-                    if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "No complete Packet in file, taking a little break...");
-                    e.printStackTrace();
-                    return null;
-                }
-        } else if(mIsFileEmpty){
-            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "File is empty, try to init it again.");
+        if (!isVpn && !mIsFileEmpty) {
+            try {
+                return mDecoder.nextPacket();
+            } catch (StreamFormatException e) {
+                if (Const.IS_DEBUG)
+                    Log.d(Const.LOG_TAG, "No complete Packet in file, taking a little break...");
+                e.printStackTrace();
+                return null;
+            }
+        } else if (mIsFileEmpty) {
+            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "File is empty, try to init it again.");
             initDecoderWithDumpfile();
             return null;
-        } else if(isVpn){
+        } else if (isVpn) {
             //TODO: VPN branch - read from CloneBuffer
             return null;
         }
@@ -161,19 +152,30 @@ public class AnalyzerService extends Service {
 
     private void initDecoderWithDumpfile() {
         try {
-            if(mFilePath.exists()) {
-                checkEmptyFile(mFilePath);
+            if (mDumpFile.exists()) {
+                checkEmptyFile(mDumpFile);
                 if(!mIsFileEmpty) {
-                    mRawIn = new RawformatInputStream(mFilePath.getAbsolutePath());
+                    mRawIn = new RawformatInputStream(mDumpFile.getAbsolutePath());
                     mRawIn.skip(mBufferPosition);
                     mDecoder = new Decoder(mRawIn);
 
                 }
             } else{
-                Log.e(Const.LOG_TAG, "Could not find raw Dump file " + mFilePath.getAbsolutePath());
+                Log.e(Const.LOG_TAG, "Could not find raw Dump file " + mDumpFile.getAbsolutePath());
             }
         } catch (IOException | SyntaxError | EOPacketStream | StreamFormatException e) {
             e.printStackTrace();
+        }
+    }
+
+    /*
+     * Class for clients to access.  Because we know this service always
+     * runs in the same process as its clients, we don't need to deal with
+     * IPC.
+     */
+    public class AnalyzerBinder extends Binder {
+        AnalyzerService getService() {
+            return AnalyzerService.this;
         }
     }
 
