@@ -123,7 +123,7 @@ public class DumpHandler {
                 ContextSingleton.getActivity().startService(intent);
                 break;
             } else {
-                Log.i(Const.LOG_TAG, mFile.getAbsolutePath() + "does not exist. Wait for dump process " + (10 - i) + " times...");
+                Log.i(Const.LOG_TAG, mFile.getAbsolutePath() + " does not exist. Wait for dump process " + (10 - i) + " times...");
                 if(i == 9) {
                     Log.e(Const.LOG_TAG, mFile.getAbsolutePath() + "does not exist. Service not started");
                 }

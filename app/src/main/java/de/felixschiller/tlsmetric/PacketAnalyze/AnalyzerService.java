@@ -14,9 +14,17 @@ import com.voytechs.jnetstream.io.RawformatInputStream;
 import com.voytechs.jnetstream.io.StreamFormatException;
 import com.voytechs.jnetstream.npl.SyntaxError;
 
+import org.jnetpcap.Pcap;
+import org.jnetpcap.packet.JPacket;
+import org.jnetpcap.packet.PcapPacket;
+import org.jnetpcap.packet.PcapPacketHandler;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
@@ -30,24 +38,40 @@ public class AnalyzerService extends Service {
 
     public static boolean mInterrupt;
     private Thread mThread;
+
+    //JNETSTREAM stuff
     private Decoder mDecoder;
     private RawformatInputStream mRawIn;
+
+    //JNETPCAP stuff
+    final StringBuilder mErrbuf = new StringBuilder();
+    private Pcap mPcap;
+    PcapPacketHandler<String> mJpacketHandler;
+    private Queue<JPacket> mPacketQueue;
+
     private File mDumpFile;
     private long mBufferPosition;
+
+
     private boolean mIsFileEmpty;
     private boolean isVpn;
 
-    private FilterRules mFilterRules;
+    private PacketProcessing mProcess;
 
     @Override
     public void onCreate() {
+        System.loadLibrary("jnetpcap");
         mInterrupt = false;
         mBufferPosition = 0;
-        mFilterRules = new FilterRules();
+        mProcess = new PacketProcessing();
 
         if(!isVpn){
             mDumpFile = new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_DUMP);
-            initDecoderWithDumpfile();
+            //initDecoderWithDumpfile();
+            initPcapWithDumpfile();
+            mPacketQueue = new LinkedList<>();
+
+
         } else {
             //TODO: Init mDecoder set to CloneBuffer
         }
@@ -70,14 +94,16 @@ public class AnalyzerService extends Service {
                 try {
                     Packet packet;
                     while (!mInterrupt) {
-                        packet = dumpNext();
-                        if(packet != null){
-                            analyzePacket(packet);
+                        //packet = dumpNext();
+                        dumpNextPcap();
+                        if(!mPacketQueue.isEmpty()){
+                            analyzePacket(mPacketQueue.poll());
                             Thread.sleep(50);
                         } else {
                             Thread.sleep(500);
                             if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Reinitialize dumpfile");
-                            initDecoderWithDumpfile();
+                            //initDecoderWithDumpfile();
+                            initPcapWithDumpfile();
                         }
                     }
                 } catch (SyntaxError | IOException | InterruptedException e) {
@@ -97,6 +123,9 @@ public class AnalyzerService extends Service {
     public void onDestroy() {
         DumpHandler.deleteDumpFile();
         Toast.makeText(this, "TLSMetric service stopped", Toast.LENGTH_SHORT).show();
+        if(mPcap != null){
+            mPcap.close();
+        }
     }
 
     @Override
@@ -130,9 +159,29 @@ public class AnalyzerService extends Service {
         return null;
     }
 
+    private void dumpNextPcap() throws IOException, SyntaxError {
+
+        if (!isVpn && !mIsFileEmpty) {
+                int code = mPcap.loop(1, mJpacketHandler, "TLSMetric");
+                if (code < 0 && Const.IS_DEBUG)
+                    Log.d(Const.LOG_TAG, "No complete Packet in file, taking a little break...");
+        } else if (mIsFileEmpty) {
+            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "File is empty, try to init it again.");
+            initDecoderWithDumpfile();
+        } else if (isVpn) {
+            //TODO: VPN branch - read from CloneBuffer
+        }
+    }
+
     private void analyzePacket(Packet pkt){
-        //TODO: Analyzer Logic
         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, pkt.getSummary());
+        mProcess.processPacket(pkt);
+
+    }
+
+    private void analyzePacket(JPacket pkt){
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, pkt.toString());
+        mProcess.processPacket(pkt);
     }
 
     private void checkEmptyFile(File file) {
@@ -165,6 +214,32 @@ public class AnalyzerService extends Service {
             }
         } catch (IOException | SyntaxError | EOPacketStream | StreamFormatException e) {
             e.printStackTrace();
+        }
+    }
+
+
+    private void initPcapWithDumpfile() {
+        if (mDumpFile.exists()) {
+            checkEmptyFile(mDumpFile);
+            if (!mIsFileEmpty) {
+                if(mPcap != null){
+                    mPcap.close();
+                }
+                mPcap = Pcap.openOffline(mDumpFile.getAbsolutePath(), mErrbuf);
+                if (mPcap == null) {
+                    if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Error while opening device for capture: "
+                            + mErrbuf.toString());
+                }
+
+                mJpacketHandler = new PcapPacketHandler<String>() {
+                    @Override
+                    public void nextPacket(PcapPacket packet, String user) {
+                        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, packet.toString());
+                    }
+                };
+            } else {
+                Log.e(Const.LOG_TAG, "Could not find raw Dump file " + mDumpFile.getAbsolutePath());
+            }
         }
     }
 
