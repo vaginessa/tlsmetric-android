@@ -24,7 +24,7 @@ import de.felixschiller.tlsmetric.R;
  * Holds filters for accessing from packet analyzer and can parses them from a given file.
  */
 public class FilterRules {
-    public static ArrayList<Filter> mFilterList = new ArrayList<>();
+    private static ArrayList<Filter> mFilterList = new ArrayList<>();
 
     public FilterRules() {
         deployFilterFile(ContextSingleton.getContext());
@@ -34,11 +34,15 @@ public class FilterRules {
         }
     }
 
-    public static void addFilter(Filter filter) {
+    public static ArrayList<Filter> getFilterList(){
+        return mFilterList;
+    }
+
+    private static void addFilter(Filter filter) {
         mFilterList.add(filter);
     }
 
-    public static void parseFilterList(File file){
+    private static void parseFilterList(File file){
         String statement;
 
         try{
@@ -67,12 +71,13 @@ public class FilterRules {
         String value = null;
 
         if(statement.contains("IS_PRESENT")){
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Building IS_PRESENT filter rule.");
             for(int i = 0; i < statement.length(); i++ ){
                 if(statement.charAt(i) == separator){
                     current++;
                     String result = statement.substring(position, i);
                     position = i + 1;
-                    Log.e(Const.LOG_TAG, "Found: " + result);
+                    if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Found: " + result);
                     switch (current)
                     {
                         case 1:
@@ -91,15 +96,17 @@ public class FilterRules {
                     }
                 }
             }
-
             addFilter(new Filter(Filter.FilterType.IS_PRESENT, protocol, (short)(severity.charAt(0)), description));
         }
+
         if(statement.contains("CONTAINS")){
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Building CONTAINS filter rule.");
             for(int i = 0; i < statement.length(); i++ ){
                 if(statement.charAt(i) == separator){
                     current++;
-                    position = i + 1;
                     String result = statement.substring(position, i);
+                    position = i + 1;
+                    if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Found: " + result);
                     switch (current)
                     {
                         case 1:
@@ -110,10 +117,10 @@ public class FilterRules {
                         case 3:
                             severity = result;
                             break;
-                        case 5:
+                        case 4:
                             value = result;
                             break;
-                        case 4:
+                        case 5:
                             description = result;
                             break;
 
@@ -125,7 +132,7 @@ public class FilterRules {
             try {
                 addFilter(new Filter(Filter.FilterType.CONTAINS, protocol, ToolBox.hexStringToByteArray(value), (short) (severity.charAt(0)), description));
             } catch (NumberFormatException e) {
-                Log.e(Const.LOG_TAG, "Invalid filter rule -- Check for invalid HexString: " + value);
+                Log.e(Const.LOG_TAG, "Invalid filter rule detected: " + statement + " \n -- Check for invalid HexString: " + value);
                 e.printStackTrace();
             }
         }
