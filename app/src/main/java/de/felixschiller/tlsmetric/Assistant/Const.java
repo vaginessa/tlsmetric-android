@@ -17,7 +17,7 @@ public interface Const {
 
     //File info for AnalyzerService
     String FILE_TCPDUMP = "tcpdump";
-    String FILE_DUMP = "dump.pcap";
     String FILE_FILTER = "filter.ini";
+    String FILE_DUMP = "dump.pcap";
     String PARAMS = "-w";
 }

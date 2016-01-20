@@ -4,9 +4,6 @@ import android.util.Log;
 
 import com.voytechs.jnetstream.codec.Packet;
 
-import org.jnetpcap.packet.JPacket;
-import org.jnetpcap.protocol.tcpip.Http;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,29 +25,6 @@ public class PacketProcessing {
     }
 
     public void processPacket(Packet pkt){
-        ListIterator ite = mFilterList.listIterator();
-        ArrayList<Filter> foundList = new ArrayList<>();
-        while (ite.hasNext()){
-            Filter filter = (Filter)ite.next();
-            if(processFilter(pkt, filter)){
-                foundList.add(filter);
-            }
-        }
-
-        //TODO: Change from debug to productive
-        if (foundList.isEmpty()){
-            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "No filters triggered.");
-        } else {
-            String debug = "";
-            ite = foundList.listIterator();
-            while(ite.hasNext()){
-                Filter filter = (Filter)ite.next();
-                debug.concat(filter.description + ", ");
-            }
-        }
-    }
-
-    public void processPacket(JPacket pkt){
         ListIterator ite = mFilterList.listIterator();
         ArrayList<Filter> foundList = new ArrayList<>();
         while (ite.hasNext()){
@@ -104,36 +78,6 @@ public class PacketProcessing {
         }
     }
 
-    private boolean processFilter(JPacket pkt, Filter filter) {
-
-        switch (filter.filterType){
-
-            case IS_PRESENT:
-                if(pkt.hasHeader(new Http())){
-                    if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, filter.protocol + " protocol found.");
-                    return true;
-                } else {
-                    return false;
-                }
-/*
-            case CONTAINS :
-                if(pkt.hasHeader(new Https){
-                    if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, filter.protocol + " protocol found.");
-                    byte[] b = pkt.getDataValue();
-                    if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Search for " + ToolBox.printHexBinary(filter.value) + " in " + ToolBox.printHexBinary(b));
-                    int atPos = searchByteArray(b, filter.value);
-                    if (atPos != -1){
-                        if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Found " + ToolBox.printHexBinary(filter.value) + " at position " + atPos);
-                        return true;
-                    }
-                } else {
-                    return false;
-                }*/
-
-            default:
-                return false;
-        }
-    }
 
     public static int searchByteArray(byte[] input, byte[] searchedFor) {
         //convert byte[] to Byte[]
