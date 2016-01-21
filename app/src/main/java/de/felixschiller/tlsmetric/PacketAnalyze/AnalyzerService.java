@@ -37,13 +37,10 @@ public class AnalyzerService extends Service {
     private boolean mIsFileEmpty;
     private boolean isVpn;
 
-    private FilterRules mFilterRules;
-
     @Override
     public void onCreate() {
         mInterrupt = false;
         mBufferPosition = 0;
-        mFilterRules = new FilterRules();
 
         if(!isVpn){
             mDumpFile = new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_DUMP);

@@ -9,4 +9,10 @@
     <string name="startProcessing">DNS Request send.</string>
     <string name="dummy">Dummybutton</string>
 
+    <string name="ALERT_HTTP">HTTP warning String</string>
+    <string name="ALERT_TLS_10" />
+    <string name="ALERT_TLS_03" />
+    <string name="ALERT_TLS_12" />
+    <string name="ALERT_TLS_11" />
+
 </resources>
