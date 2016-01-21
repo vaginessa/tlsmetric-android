@@ -5,17 +5,17 @@ package de.felixschiller.tlsmetric.PacketAnalyze.Filter;
  */
 public class Tls extends Filter {
 
-    public TLSprotocol mSubProtocol;
+    public TlsProtocol mSubProtocol;
     public int mVersion;
 
-    public Tls(Protocol protocol, int severity, String description, TLSprotocol subProtocol, int version) {
+    public Tls(Protocol protocol, int severity, String description, TlsProtocol subProtocol, int version) {
         super(protocol, severity, description);
         checkCypher = true;
         mSubProtocol = subProtocol;
         mVersion = version;
     }
 
-    public enum TLSprotocol {
+    public enum TlsProtocol {
         HANDSHAKE,
         CHANGE_CYPHER,
         ALERT,

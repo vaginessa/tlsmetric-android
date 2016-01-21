@@ -19,9 +19,9 @@ public abstract class Filter {
         HTTP,
         SSL2,
         SSL3,
-        TLS1_0,
-        TLS1_1,
-        TLS1_2,
+        TLS10,
+        TLS11,
+        TLS12, SSL1,
     }
 
 }

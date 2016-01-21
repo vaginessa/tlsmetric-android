@@ -35,31 +35,31 @@ public class Identifyer {
                     ContextSingleton.getContext().getResources().getString(R.string.ALERT_TLS_03),
                     fillSubProto(ident), 10);
         else if (searchByteArray(ident, sTLS10) == 1 && fillSubProto(ident) != null)
-            filter = new Tls(Filter.Protocol.HTTP, 0,
+            filter = new Tls(Filter.Protocol.TLS10, 0,
                     ContextSingleton.getContext().getResources().getString(R.string.ALERT_TLS_10),
                     fillSubProto(ident), 10);
         else if (searchByteArray(ident, sTLS11) == 1 && fillSubProto(ident) != null)
-            filter = new Tls(Filter.Protocol.HTTP, 0,
+            filter = new Tls(Filter.Protocol.TLS11, 0,
                     ContextSingleton.getContext().getResources().getString(R.string.ALERT_TLS_11),
                     fillSubProto(ident), 11);
         else if (searchByteArray(ident, sTLS12) == 1 && fillSubProto(ident) != null)
-            filter = new Tls(Filter.Protocol.HTTP, 0,
+            filter = new Tls(Filter.Protocol.TLS12, 0,
                     ContextSingleton.getContext().getResources().getString(R.string.ALERT_TLS_12),
                     fillSubProto(ident), 12);
         return filter;
     }
 
-    private static Tls.TLSprotocol fillSubProto(byte[] ident) {
+    private static Tls.TlsProtocol fillSubProto(byte[] ident) {
 
         switch (ident[0]) {
             case (byte) 0x16:
-                return Tls.TLSprotocol.HANDSHAKE;
+                return Tls.TlsProtocol.HANDSHAKE;
             case (byte) 0x15:
-                return Tls.TLSprotocol.ALERT;
+                return Tls.TlsProtocol.ALERT;
             case (byte) 0x17:
-                return Tls.TLSprotocol.APP_DATA;
+                return Tls.TlsProtocol.APP_DATA;
             case (byte) 0x14:
-                return Tls.TLSprotocol.CHANGE_CYPHER;
+                return Tls.TlsProtocol.CHANGE_CYPHER;
             default:
                 return null;
         }
@@ -93,7 +93,7 @@ public class Identifyer {
                 q.addLast(input[i]);
             }
         }
-        if (Const.IS_DEBUG)
+        if (Const.IS_DEBUG && idx != -1)
             Log.d(Const.LOG_TAG, ToolBox.printHexBinary(searchedFor) + " found at position " + idx);
         return idx;
     }

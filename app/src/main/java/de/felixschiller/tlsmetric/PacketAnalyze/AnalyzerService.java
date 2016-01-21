@@ -36,10 +36,12 @@ public class AnalyzerService extends Service {
     private long mBufferPosition;
     private boolean mIsFileEmpty;
     private boolean isVpn;
+    private PacketProcessing mPacketProcessing = new PacketProcessing();
 
     @Override
     public void onCreate() {
         mInterrupt = false;
+
         mBufferPosition = 0;
 
         if(!isVpn){
@@ -128,7 +130,7 @@ public class AnalyzerService extends Service {
     }
 
     private void analyzePacket(Packet pkt){
-        //TODO: Analyzer Logic
+        mPacketProcessing.processPacket(pkt);
         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, pkt.getSummary());
     }
 
