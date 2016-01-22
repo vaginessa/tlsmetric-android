@@ -13,7 +13,6 @@ import android.widget.TextView;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
-import de.felixschiller.tlsmetric.Assistant.ToolBox;
 import de.felixschiller.tlsmetric.R;
 import de.felixschiller.tlsmetric.RootDump.CheckDependencies;
 import de.felixschiller.tlsmetric.RootDump.DumpHandler;
@@ -21,7 +20,7 @@ import de.felixschiller.tlsmetric.VpnDump.VpnBypassService;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ToolBox mTool = new ToolBox();
+
     private TextView mStatusText;
     private DumpHandler mDumpHandler;
 
@@ -31,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
         ContextSingleton.setContext(this);
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_test);
+        setContentView(R.layout.activity_main);
 
         //TODO: Change Sudo tests
         // Test for Root Acces and Logging
@@ -90,6 +89,15 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar.make(view, "Stop TLSMetric(Root) Service", Snackbar.LENGTH_LONG).setAction("Action", null).show();
                 mDumpHandler.stopAnalyzerService();
                 mDumpHandler.stop();
+            }
+        });
+
+        Button gotoEvidence = (Button) findViewById(R.id.gotoEvidence);
+        gotoEvidence.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(ContextSingleton.getContext(), EvidenceActivity.class);
+                startActivity(intent);
             }
         });
     }

@@ -1,0 +1,81 @@
+    <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contextClickable="false">
+
+        <TableRow
+            android:id="@+id/tableRow1">
+            <TextView
+                android:id="@+id/testText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="@string/statusText"
+                android:layout_column="0" />
+        </TableRow>
+        <TableRow
+            android:id="@+id/tableRow2"
+            android:padding="5dip">
+
+            <Button
+                android:id="@+id/fabStart"
+                style="@style/AlertDialog.AppCompat.Light"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:text="@string/buttTextStart"
+                android:background="#2e7d32"
+                android:layout_column="0" />
+
+            <Button
+                android:id="@+id/fabStop"
+                style="@style/AlertDialog.AppCompat.Light"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:text="@string/buttTextStop"
+                android:background="#b71c1c"
+                android:layout_column="1" />
+
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="5dip">
+
+            <Button
+                android:id="@+id/startDump"
+                style="@style/AlertDialog.AppCompat.Light"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:text="@string/startDump"
+                android:background="#9e9e9e"
+                android:layout_column="0" />
+
+            <Button
+                android:id="@+id/stopDump"
+                style="@style/AlertDialog.AppCompat.Light"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:text="@string/stopDump"
+                android:background="#905000"
+                android:layout_column="1" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="5dip">
+
+            <Button
+                android:id="@+id/gotoEvidence"
+                style="@style/AlertDialog.AppCompat.Light"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:text="@string/gotoEvidence"
+                android:background="#a97100"
+                android:layout_column="0" />
+
+        </TableRow>
+
+
+
+    </TableLayout>

@@ -6,13 +6,15 @@
     <string name="buttTextStop">Stop VPN-Bypass</string>
     <string name="startDump">TLS Metric with TCPDump.</string>
     <string name="stopDump">Stop TCPDump.</string>
-    <string name="startProcessing">DNS Request send.</string>
     <string name="dummy">Dummybutton</string>
+    <string name="gotoEvidence">GOTO: Evidence</string>
 
     <string name="ALERT_HTTP">HTTP warning String</string>
-    <string name="ALERT_TLS_10" />
-    <string name="ALERT_TLS_03" />
-    <string name="ALERT_TLS_12" />
-    <string name="ALERT_TLS_11" />
+    <string name="ALERT_TLS_10">TLS warning String</string>
+    <string name="ALERT_TLS_03">TLS warning String</string>
+    <string name="ALERT_TLS_12">TLS warning String</string>
+    <string name="ALERT_TLS_11">TLS warning String</string>
+    <string name="evidenceSecondLine">Severity:</string>
+
 
 </resources>

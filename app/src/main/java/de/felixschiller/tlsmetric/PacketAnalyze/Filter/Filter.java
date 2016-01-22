@@ -1,5 +1,8 @@
 package de.felixschiller.tlsmetric.PacketAnalyze.Filter;
 
+import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
+import de.felixschiller.tlsmetric.R;
+
 /**
  * Class for Filter rules
  */
@@ -12,7 +15,6 @@ public abstract class Filter {
     public Filter(Protocol protocol, int severity, String description) {
         this.protocol = protocol;
         this.severity = severity;
-        this.description = description;
     }
 
     public enum Protocol {
