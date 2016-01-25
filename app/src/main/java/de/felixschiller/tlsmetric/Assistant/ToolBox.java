@@ -4,6 +4,16 @@ import android.content.Context;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+
+import de.felixschiller.tlsmetric.R;
 
 /**
  * All the litte helpers of this app
@@ -58,6 +68,25 @@ public class ToolBox{
         if ('A' <= ch && ch <= 'F') return ch - 'A' + 10;
         if ('a' <= ch && ch <= 'f') return ch - 'a' + 10;
         return -1;
+    }
+
+    public static InetAddress getLocalAddress(){
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
+                 en.hasMoreElements();) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress()) {
+                        return inetAddress;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(Const.LOG_TAG, "Error while obtaining local address");
+            e.printStackTrace();
+        }
+        return null;
     }
 
 }

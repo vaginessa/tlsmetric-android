@@ -20,6 +20,7 @@ public class PacketProcessing {
         if (filter != null) {
             if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Filter triggered: " + filter.protocol);
         }
+
     }
 
     private Filter scanPacket(Packet pkt) {

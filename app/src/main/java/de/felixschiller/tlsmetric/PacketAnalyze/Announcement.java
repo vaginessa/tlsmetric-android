@@ -2,6 +2,10 @@ package de.felixschiller.tlsmetric.PacketAnalyze;
 
 import android.graphics.drawable.Icon;
 
+
+import java.net.InetAddress;
+import java.sql.Timestamp;
+
 import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Filter;
 
 /**
@@ -9,15 +13,14 @@ import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Filter;
  */
 public class Announcement {
 
-    public byte[] dstAddr;
+    public InetAddress dstAddr;
     public String url;
     public int srcPort;
-    public int dstPost;
+    public int dstPort;
+    public Timestamp timestamp;
 
-    public Icon icon;
-    public String appName;
-    public String appVendor;
     public int pid;
 
     public Filter filter;
+
 }

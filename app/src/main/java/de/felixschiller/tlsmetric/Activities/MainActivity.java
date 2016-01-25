@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
+import de.felixschiller.tlsmetric.PacketAnalyze.Evidence;
 import de.felixschiller.tlsmetric.R;
 import de.felixschiller.tlsmetric.RootDump.CheckDependencies;
 import de.felixschiller.tlsmetric.RootDump.DumpHandler;
@@ -26,11 +27,15 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         //Fill the Singleton
         ContextSingleton.setContext(this);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //TESTCOMMAND!
+        Evidence evidence = new Evidence();
 
         //TODO: Change Sudo tests
         // Test for Root Acces and Logging

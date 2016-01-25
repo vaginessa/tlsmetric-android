@@ -20,4 +20,5 @@ public interface Const {
     String FILE_DUMP = "dump.pcap";
     String FILE_FILTER = "filter.ini";
     String PARAMS = "-w";
+    Object FILE_RESOLVE_PID = "resolve";
 }

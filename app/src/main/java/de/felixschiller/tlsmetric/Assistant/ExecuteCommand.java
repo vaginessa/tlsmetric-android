@@ -132,7 +132,6 @@ public class ExecuteCommand extends Thread {
         for (Object x : xs) {
             if (x != null) {
                 try {
-                    Log.d(Const.LOG_TAG, "closing: " + x);
                     if (x instanceof Closeable) {
                         ((Closeable) x).close();
                     } else {
