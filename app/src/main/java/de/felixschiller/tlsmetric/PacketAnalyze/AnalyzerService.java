@@ -31,12 +31,11 @@ public class AnalyzerService extends Service {
     public static boolean mInterrupt;
     private Thread mThread;
     private Decoder mDecoder;
-    private RawformatInputStream mRawIn;
     private File mDumpFile;
     private long mBufferPosition;
     private boolean mIsFileEmpty;
     private boolean isVpn;
-    private PacketProcessing mPacketProcessing = new PacketProcessing();
+    private Evidence mEvidence = new Evidence();
 
     @Override
     public void onCreate() {
@@ -130,7 +129,7 @@ public class AnalyzerService extends Service {
     }
 
     private void analyzePacket(Packet pkt){
-        mPacketProcessing.processPacket(pkt);
+        mEvidence.processPacket(pkt);
         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, pkt.getSummary());
     }
 
@@ -154,7 +153,7 @@ public class AnalyzerService extends Service {
             if (mDumpFile.exists()) {
                 checkEmptyFile(mDumpFile);
                 if(!mIsFileEmpty) {
-                    mRawIn = new RawformatInputStream(mDumpFile.getAbsolutePath());
+                    RawformatInputStream mRawIn = new RawformatInputStream(mDumpFile.getAbsolutePath());
                     mRawIn.skip(mBufferPosition);
                     mDecoder = new Decoder(mRawIn);
 

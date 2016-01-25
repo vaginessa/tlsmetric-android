@@ -15,10 +15,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
@@ -26,6 +25,7 @@ import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.Assistant.ExecuteCommand;
 import de.felixschiller.tlsmetric.Assistant.ToolBox;
 import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Filter;
+import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Identifyer;
 import de.felixschiller.tlsmetric.R;
 
 /**
@@ -33,33 +33,59 @@ import de.felixschiller.tlsmetric.R;
  */
 public class Evidence {
 
-    public static ArrayList<Announcement> annouceList;
+    public static HashMap<Integer, LinkedList<Announcement>> mEvidence;
     public static boolean newData;
     public static File mResolveFile;
     public static HashMap<Integer, Integer> mPortPidMap;
-    public static HashMap<Integer, PackageInformation> mPackageMap;
+    public static HashMap<Integer, PackageInformation> mPacketInfoMap;
 
     public Evidence(){
-        annouceList = new ArrayList<>();
+        mEvidence = new HashMap<>();
         newData = false;
         mResolveFile =  new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_RESOLVE_PID);
         mPortPidMap = generatePortPidMap();
-        mPackageMap = new HashMap<>();
+        mPacketInfoMap = new HashMap<>();
 
     }
 
-    public static void addEntry(Announcement announcement){
-        ListIterator<Announcement> ite = annouceList.listIterator();
-        Announcement presentAnnouncement;
-        while(ite.hasNext()){
-            presentAnnouncement = ite.next();
-            if(presentAnnouncement.srcPort == announcement.srcPort){
-                if(presentAnnouncement.filter.severity <= announcement.filter.severity){
-                    ite.remove();
-                    ite.add(announcement);
-                    newData = true;
-                }
+    public void processPacket(Packet pkt) {
+        Filter filter = scanPacket(pkt);
+        if (filter != null) {
+            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Filter triggered: " + filter.protocol);
+            Announcement ann = generateAnnouncement(pkt, filter);
+
+            //TODO: decide when and how packets are added and removedto the list
+            if(mEvidence.containsKey(ann.srcPort)){
+               mEvidence.get(ann.srcPort).add(ann);
+            } else {
+                LinkedList<Announcement> newList = new LinkedList<>();
+                newList.add(ann);
+                mEvidence.put(ann.srcPort, newList);
             }
+        }
+
+    }
+
+    private Filter scanPacket(Packet pkt) {
+
+        if (pkt.hasHeader("TCP") && pkt.hasDataHeader()) {
+            byte[] b = pkt.getDataValue();
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, b.length + " Bytes data found");
+            ByteBuffer bb = ByteBuffer.allocate(b.length);
+            bb.put(b);
+
+            byte[] identChunk;
+            if (b.length >= 12){
+                identChunk = new byte[20];
+            } else {
+                identChunk = new byte[8];
+            }
+
+            bb.position(0);
+            bb.get(identChunk);
+            return Identifyer.indent(identChunk);
+        } else {
+            return null;
         }
     }
 
@@ -120,7 +146,7 @@ public class Evidence {
     private static void fillAppData(Announcement ann) {
         ann.pid = getPidByPort(ann.srcPort);
 
-        if (ann.pid > 0 && !mPackageMap.containsKey(ann.pid)){
+        if (ann.pid > 0 && !mPacketInfoMap.containsKey(ann.pid)){
             PackageManager pm = ContextSingleton.getContext().getPackageManager();
             ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
             PackageInformation pi = new PackageInformation();
@@ -140,18 +166,23 @@ public class Evidence {
                         pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.drawable.icon_048);
                     }
                 }
-
             }
         }
-
     }
 
 
     private static int getPidByPort(int port) {
-        if(mPortPidMap.containsKey(port)){
-            return mPortPidMap.get(port);
+
+        if(!mPortPidMap.containsKey(port)){
+            generatePortPidMap();
+            if(mPortPidMap.containsKey(port)){
+                return mPortPidMap.get(port);
+            } else{
+                return -1;
+            }
         } else {
-            return -1;
+            return mPortPidMap.get(port);
+
         }
     }
 
@@ -178,22 +209,22 @@ public class Evidence {
     }
 
     public static HashMap<Integer, Integer> getPidMap(){
-        HashMap<Integer, Integer> result = new HashMap<Integer, Integer>();
+        HashMap<Integer, Integer> result = new HashMap<>();
         int[] pids = getPids();
 
         String[] split;
-        for(int i = 0; i < pids.length; i++ ){
-            String command = "cat /proc/" + pids[i] + "/status";
+        for (int pid : pids) {
+            String command = "cat /proc/" + pid + "/status";
             String readIn = ExecuteCommand.userForResult(command);
             int pos = readIn.indexOf("Uid");
             readIn = readIn.substring(pos, pos + 20);
             split = readIn.split("\\t");
-            try{
+            try {
                 int uid = Integer.parseInt(split[1]);
-                result.put(uid, pids[i]);
-            } catch(NumberFormatException e) {
-                Log.e(Const.LOG_TAG, "Parsing of UID failed! " + split[1] + " Pid: " + pids[i]);
-                result.put(0, pids[i]);
+                result.put(uid, pid);
+            } catch (NumberFormatException e) {
+                Log.e(Const.LOG_TAG, "Parsing of UID failed! " + split[1] + " Pid: " + pid);
+                result.put(0, pid);
             }
         }
         return result;
@@ -211,7 +242,7 @@ public class Evidence {
     }
 
     public static HashMap<Integer, Integer> getPortMap() {
-        HashMap<Integer, Integer> result = new HashMap<Integer, Integer>();
+        HashMap<Integer, Integer> result = new HashMap<>();
         String commandTcp4 = "cat /proc/net/tcp";
         String commandTcp6 = "cat /proc/net/tcp6";
 
@@ -228,7 +259,7 @@ public class Evidence {
         splitLines = readIn.split("\\n");
         for (int i = 1; i < splitLines.length; i++) {
             splitLines[i] = splitLines[i].trim();
-            while (splitLines[i].indexOf("  ") >= 0) {
+            while (splitLines[i].contains("  ")) {
                 splitLines[i] = splitLines[i].replace("  ", " ");
             }
             splitTabs = splitLines[i].split("\\s");
