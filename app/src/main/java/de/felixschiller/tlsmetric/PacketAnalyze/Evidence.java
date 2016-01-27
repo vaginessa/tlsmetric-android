@@ -15,6 +15,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,14 +34,16 @@ import de.felixschiller.tlsmetric.R;
  */
 public class Evidence {
 
-    public static HashMap<Integer, LinkedList<Announcement>> mEvidence;
+    public static ArrayList<Announcement> mEvidence;
+    public static HashMap<Integer, LinkedList<Announcement>> mEvidenceDetail;
     public static boolean newData;
     public static File mResolveFile;
     public static HashMap<Integer, Integer> mPortPidMap;
     public static HashMap<Integer, PackageInformation> mPacketInfoMap;
 
     public Evidence(){
-        mEvidence = new HashMap<>();
+        mEvidence = new ArrayList<>();
+        mEvidenceDetail = new HashMap<>();
         newData = false;
         mResolveFile =  new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_RESOLVE_PID);
         mPortPidMap = generatePortPidMap();
@@ -53,17 +56,38 @@ public class Evidence {
         if (filter != null) {
             if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Filter triggered: " + filter.protocol);
             Announcement ann = generateAnnouncement(pkt, filter);
+            computeEvidenceEntry(ann);
+        }
 
-            //TODO: decide when and how packets are added and removedto the list
-            if(mEvidence.containsKey(ann.srcPort)){
-               mEvidence.get(ann.srcPort).add(ann);
-            } else {
-                LinkedList<Announcement> newList = new LinkedList<>();
-                newList.add(ann);
-                mEvidence.put(ann.srcPort, newList);
+    }
+
+    private void computeEvidenceEntry(Announcement ann){
+
+        boolean updated = false;
+
+        //Check and update existing connections with lesser filter severity
+        for(int i =0; i< mEvidence.size(); i++){
+            if(mEvidence.get(i).srcPort == ann.srcPort){
+                updated = true;
+                if(mEvidence.get(i).filter.severity < ann.filter.severity){
+                    mEvidence.set(i, ann);
+                }
             }
         }
 
+        //Add found filters if connection not yet exist
+        if(!updated){
+            mEvidence.add(ann);
+        }
+
+        //Add all found filters to the detail list
+        if(mEvidenceDetail.containsKey(ann.srcPort)){
+            mEvidenceDetail.get(ann.srcPort).add(ann);
+        } else {
+            LinkedList<Announcement> newList = new LinkedList<>();
+            newList.add(ann);
+            mEvidenceDetail.put(ann.srcPort, newList);
+        }
     }
 
     private Filter scanPacket(Packet pkt) {

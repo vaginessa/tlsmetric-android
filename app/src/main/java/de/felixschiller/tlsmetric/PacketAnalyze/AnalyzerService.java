@@ -30,6 +30,7 @@ public class AnalyzerService extends Service {
 
     public static boolean mInterrupt;
     private Thread mThread;
+    private RawformatInputStream mRawIn;
     private Decoder mDecoder;
     private File mDumpFile;
     private long mBufferPosition;
@@ -153,7 +154,7 @@ public class AnalyzerService extends Service {
             if (mDumpFile.exists()) {
                 checkEmptyFile(mDumpFile);
                 if(!mIsFileEmpty) {
-                    RawformatInputStream mRawIn = new RawformatInputStream(mDumpFile.getAbsolutePath());
+                    mRawIn = new RawformatInputStream(mDumpFile.getAbsolutePath());
                     mRawIn.skip(mBufferPosition);
                     mDecoder = new Decoder(mRawIn);
 
