@@ -56,12 +56,12 @@ public class Evidence {
         if (filter != null) {
             if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Filter triggered: " + filter.protocol);
             Announcement ann = generateAnnouncement(pkt, filter);
-            computeEvidenceEntry(ann);
+            addEvidenceEntry(ann);
         }
 
     }
 
-    private void computeEvidenceEntry(Announcement ann){
+    private void addEvidenceEntry(Announcement ann){
 
         boolean updated = false;
 
@@ -77,6 +77,7 @@ public class Evidence {
 
         //Add found filters if connection not yet exist
         if(!updated){
+            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Adding connection " + ann.url + "to evidence list.");
             mEvidence.add(ann);
         }
 
@@ -241,14 +242,21 @@ public class Evidence {
             String command = "cat /proc/" + pid + "/status";
             String readIn = ExecuteCommand.userForResult(command);
             int pos = readIn.indexOf("Uid");
-            readIn = readIn.substring(pos, pos + 20);
-            split = readIn.split("\\t");
             try {
-                int uid = Integer.parseInt(split[1]);
-                result.put(uid, pid);
-            } catch (NumberFormatException e) {
-                Log.e(Const.LOG_TAG, "Parsing of UID failed! " + split[1] + " Pid: " + pid);
-                result.put(0, pid);
+                readIn = readIn.substring(pos, pos + 20);
+            } catch (StringIndexOutOfBoundsException e){
+                Log.e(Const.LOG_TAG, "Readin of uid of process " + pid + " failed, StringIndexOutOfBounds.");
+            }
+
+            split = readIn.split("\\t");
+            if(split.length > 1) {
+                try {
+                    int uid = Integer.parseInt(split[1]);
+                    result.put(uid, pid);
+                } catch (NumberFormatException e) {
+                    Log.e(Const.LOG_TAG, "Parsing of UID failed! " + split[1] + " Pid: " + pid);
+                    result.put(0, pid);
+                }
             }
         }
         return result;
@@ -298,5 +306,22 @@ public class Evidence {
             int uid = Integer.parseInt(splitTabs[7]);
             hashMap.put(srcPort, uid);
         }
+    }
+
+    public static PackageInformation getPackageInformation(int srcPort) {
+        if(mPacketInfoMap.containsKey(srcPort)){
+            return mPacketInfoMap.get(srcPort);
+        } else {
+            return generateDummy();
+        }
+
+    }
+
+    private static PackageInformation generateDummy() {
+        PackageInformation pi = new PackageInformation();
+        pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.drawable.icon_048);
+        pi.packageName = "Unknown Application";
+
+        return pi;
     }
 }

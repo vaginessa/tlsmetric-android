@@ -4,6 +4,7 @@ import android.app.ListActivity;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,9 +16,11 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
+import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.PacketAnalyze.Announcement;
 import de.felixschiller.tlsmetric.PacketAnalyze.Evidence;
+import de.felixschiller.tlsmetric.PacketAnalyze.PackageInformation;
 import de.felixschiller.tlsmetric.R;
 
 public class EvidenceActivity extends ListActivity {
@@ -37,6 +40,7 @@ public class EvidenceActivity extends ListActivity {
         if(Evidence.mEvidenceDetail != null){
              adapter = new EvidenceAdapter(this, Evidence.mEvidence);
         } else {
+            if(Const.IS_DEBUG) Log.e(Const.LOG_TAG, "Evidence list not existing or empty!");
             adapter = new EvidenceAdapter(this, new ArrayList<Announcement>());
         }
 
@@ -88,9 +92,11 @@ public class EvidenceActivity extends ListActivity {
 
             View rowView = inflater.inflate(R.layout.evidence_list_entry, parent, false);
 
+            PackageInformation pi = Evidence.getPackageInformation(anns[position].srcPort);
+
             //First Line Text
             TextView firstLine = (TextView) rowView.findViewById(R.id.firstLine);
-            String first = Evidence.mPacketInfoMap.get(anns[position].srcPort).packageName;
+            String first = pi.packageName;
             firstLine.setText(first);
 
             //second Line Text
@@ -100,10 +106,10 @@ public class EvidenceActivity extends ListActivity {
 
             //App icon
             ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
-            imageView.setImageDrawable(Evidence.mPacketInfoMap.get(anns[position].srcPort).icon);
+            imageView.setImageDrawable(pi.icon);
 
             //Status icon
-            ImageView imageStatusView = (ImageView) rowView.findViewById(R.id.icon);
+            ImageView imageStatusView = (ImageView) rowView.findViewById(R.id.statusIcon);
             int severity = anns[position].filter.severity;
             if(severity == 3){
                 imageStatusView.setImageResource(R.drawable.icon_warn_036);
