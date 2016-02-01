@@ -44,7 +44,8 @@ public class DumpHandler {
         if (mFile.exists()){
             deleteDumpFile();
         }
-
+        //kill existing processes
+        stop();
         String command = DumpHandler.generateCommand();
         //Start tcp dump with su rights
         if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Try to start tcpdump");

@@ -1,15 +1,22 @@
 package de.felixschiller.tlsmetric.Activities;
 
-import android.app.ListActivity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -23,18 +30,22 @@ import de.felixschiller.tlsmetric.PacketAnalyze.Evidence;
 import de.felixschiller.tlsmetric.PacketAnalyze.PackageInformation;
 import de.felixschiller.tlsmetric.R;
 
-public class EvidenceActivity extends ListActivity {
-
-
+public class EvidenceActivity extends AppCompatActivity{
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_evidence);
         ContextSingleton.setContext(this);
 
+        //Toolbar
+        Toolbar toolbar = (Toolbar) findViewById(R.id.evidence_toolbar);
+        setSupportActionBar(toolbar);
+        toolbar.setLogo(R.drawable.icon_048);
+        toolbar.setLogoDescription(R.string.app_name);
 
+
+        //EvidenceList
         final ListView listview = (ListView) findViewById(android.R.id.list);
-
 
         final EvidenceAdapter adapter;
         if(Evidence.mEvidenceDetail != null){
@@ -132,6 +143,36 @@ public class EvidenceActivity extends ListActivity {
             return rowView;
         }
 
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_tlsmetric, menu);
+        return true;
+    }
+
+    //menu
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                return true;
+
+            case R.id.action_back:
+                Intent intent = new Intent(ContextSingleton.getContext(), MainActivity.class);
+                startActivity(intent);
+                return true;
+
+            case R.id.action_refresh:
+                ListView listview = (ListView) findViewById(android.R.id.list);
+                EvidenceAdapter adapter = (EvidenceAdapter)listview.getAdapter();
+                adapter.notifyDataSetChanged();
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override

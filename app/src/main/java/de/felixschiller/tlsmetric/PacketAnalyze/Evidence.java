@@ -102,10 +102,10 @@ public class Evidence {
             byte[] identChunk;
             if (b.length >= 12){
                 identChunk = new byte[20];
-            } else {
-                identChunk = new byte[8];
+            } else{
+                identChunk = new byte[b.length];
             }
-
+            
             bb.position(0);
             bb.get(identChunk);
             return Identifyer.indent(identChunk);

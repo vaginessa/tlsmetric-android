@@ -15,6 +15,11 @@
     <string name="ALERT_TLS_12">TLS warning String</string>
     <string name="ALERT_TLS_11">TLS warning String</string>
     <string name="evidenceSecondLine">Severity:</string>
+    <string name="title_activity_shifty">ShiftyActivity</string>
+    <string name="action_back">Back to Main</string>
+    <string name="action_refresh">refresh view</string>
+    <string name="headline_evidence">Active Connections</string>
+    <string name="title_activity_main2">Main2Activity</string>
 
 
 </resources>
