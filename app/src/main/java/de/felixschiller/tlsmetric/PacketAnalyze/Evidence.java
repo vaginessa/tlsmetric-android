@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -33,12 +32,13 @@ import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Identifyer;
 import de.felixschiller.tlsmetric.R;
 
 /**
- * Created by schillef on 22.01.16.
+ * Class for generating connection information (Announcements) from packets, which has been
+ * detected by the filters.
  */
 public class Evidence {
 
     public static ArrayList<Announcement> mEvidence;
-    public static HashMap<Integer, LinkedList<Announcement>> mEvidenceDetail;
+    public static HashMap<Integer, ArrayList<Announcement>> mEvidenceDetail;
     public static boolean newData;
     public static File mResolveFile;
     public static HashMap<Integer, Integer> mPortPidMap;
@@ -71,7 +71,6 @@ public class Evidence {
             addEvidenceEntry(ann);
         }
    }
-
 
     public void processPacket(Packet pkt) {
         Filter filter = scanPacket(pkt);
@@ -107,7 +106,7 @@ public class Evidence {
         if(mEvidenceDetail.containsKey(ann.srcPort)){
             mEvidenceDetail.get(ann.srcPort).add(ann);
         } else {
-            LinkedList<Announcement> newList = new LinkedList<>();
+            ArrayList<Announcement> newList = new ArrayList<>();
             newList.add(ann);
             mEvidenceDetail.put(ann.srcPort, newList);
         }
@@ -203,6 +202,7 @@ public class Evidence {
             PackageManager pm = ContextSingleton.getContext().getPackageManager();
             ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
             PackageInformation pi = new PackageInformation();
+            pi.pid = ann.pid;
 
             List<ActivityManager.RunningAppProcessInfo> pids = am.getRunningAppProcesses();
             for (int i = 0; i < pids.size(); i++) {
@@ -213,16 +213,15 @@ public class Evidence {
                         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Processing packet information of: " + list[0]);
                         pi.packageName = list[0];
                         pi.icon = pm.getApplicationIcon(pi.packageName);
+                        mPacketInfoMap.put(ann.pid, pi);
                     } catch (PackageManager.NameNotFoundException e) {
                         if(Const.IS_DEBUG)Log.e(Const.LOG_TAG, "Icon and/or package name not found. Using TLSMetric icon for unknown app.");
-                        pi.packageName = "unknown";
-                        pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.drawable.icon_048);
                     }
+
                 }
             }
         }
     }
-
 
     private static int getPidByPort(int port) {
         if(!mPortPidMap.containsKey(port)){
@@ -342,9 +341,9 @@ public class Evidence {
         }
     }
 
-    public static PackageInformation getPackageInformation(int srcPort) {
-        if(mPacketInfoMap.containsKey(srcPort)){
-            return mPacketInfoMap.get(srcPort);
+    public static PackageInformation getPackageInformation(int pid) {
+        if(mPacketInfoMap.containsKey(pid)){
+            return mPacketInfoMap.get(pid);
         } else {
             return generateDummy();
         }
@@ -354,8 +353,7 @@ public class Evidence {
     private static PackageInformation generateDummy() {
         PackageInformation pi = new PackageInformation();
         pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.drawable.icon_048);
-        pi.packageName = "Unknown Application";
-
+        pi.packageName = "Unknown App";
         return pi;
     }
 }

@@ -51,7 +51,8 @@
             android:text="@string/info_handle"
             android:id="@+id/infoText"
             android:layout_below="@+id/titleText"
-            android:layout_centerHorizontal="true" />
+            android:layout_centerHorizontal="true"
+            android:textColor="#ff7f00" />
 
         <Button
             android:id="@+id/startStop"

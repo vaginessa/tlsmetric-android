@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
@@ -31,6 +32,8 @@ import de.felixschiller.tlsmetric.PacketAnalyze.PackageInformation;
 import de.felixschiller.tlsmetric.R;
 
 public class EvidenceActivity extends AppCompatActivity{
+    ArrayList<Announcement> mCurrentList;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,21 +43,20 @@ public class EvidenceActivity extends AppCompatActivity{
         //Toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.evidence_toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setLogo(R.drawable.icon_048);
+        toolbar.setLogo(R.drawable.icon_036);
         toolbar.setLogoDescription(R.string.app_name);
-
 
         //EvidenceList
         final ListView listview = (ListView) findViewById(android.R.id.list);
 
         final EvidenceAdapter adapter;
-        if(Evidence.mEvidenceDetail != null){
-             adapter = new EvidenceAdapter(this, Evidence.mEvidence);
+        if(Evidence.mEvidence != null){
+            mCurrentList = Evidence.mEvidence;
         } else {
             if(Const.IS_DEBUG) Log.e(Const.LOG_TAG, "Evidence list not existing or empty!");
-            adapter = new EvidenceAdapter(this, new ArrayList<Announcement>());
+            mCurrentList = new ArrayList<>();
         }
-
+        adapter = new EvidenceAdapter(this, mCurrentList);
 
         listview.setAdapter(adapter);
 
@@ -63,11 +65,11 @@ public class EvidenceActivity extends AppCompatActivity{
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
                 final Announcement item = (Announcement) parent.getItemAtPosition(position);
-                view.animate().setDuration(2000).alpha(0)
+                view.animate().setDuration(500).alpha((float)0.5)
                         .withEndAction(new Runnable() {
                             @Override
                             public void run() {
-                                //TODO: Open detail Page on Click
+                                mCurrentList = Evidence.mEvidenceDetail.get(item.srcPort);
                                 adapter.notifyDataSetChanged();
                             }
                         });
@@ -98,8 +100,7 @@ public class EvidenceActivity extends AppCompatActivity{
 
             View rowView = inflater.inflate(R.layout.evidence_list_entry, parent, false);
 
-            PackageInformation pi = Evidence.getPackageInformation(anns[position].srcPort);
-
+            PackageInformation pi = Evidence.getPackageInformation(anns[position].pid);
             //First Line Text
             TextView firstLine = (TextView) rowView.findViewById(R.id.firstLine);
             String first = pi.packageName;
@@ -107,7 +108,7 @@ public class EvidenceActivity extends AppCompatActivity{
 
             //second Line Text
             TextView secondLine = (TextView) rowView.findViewById(R.id.secondLine);
-            String second = "Connection to: " + anns[position].url;
+            String second = "Host: " + anns[position].url;
             secondLine.setText(second);
 
             //App icon

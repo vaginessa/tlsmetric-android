@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent intent = new Intent(ContextSingleton.getContext(), EvidenceActivity.class);
                     startActivity(intent);
                 } else {
-                    Toast toast = Toast.makeText(ContextSingleton.getContext(), "Packet Analyzer Service is not started.", Toast.LENGTH_LONG);
+                    Toast toast = Toast.makeText(ContextSingleton.getContext(), "TLS Metric service is not yet running.", Toast.LENGTH_LONG);
                     toast.show();
                 }
 

@@ -25,7 +25,7 @@ import de.felixschiller.tlsmetric.RootDump.DumpHandler;
 
 
 /**
- * Created by schillef on 10.01.2016.
+ * Packet Analyzer Service. Working with VPN- or Dump-core, set by boolean.
  */
 public class AnalyzerService extends Service {
 
@@ -49,7 +49,8 @@ public class AnalyzerService extends Service {
             mDumpFile = new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_DUMP);
             initDecoderWithDumpfile();
         } else {
-            //TODO: VPN branch : Init mDecoder set to CloneBuffer
+            //VPN branch : Init mDecoder set to CloneBuffer
+            Log.i(Const.LOG_TAG,"VPN core not yet implemented");
         }
     }
 
@@ -124,7 +125,8 @@ public class AnalyzerService extends Service {
             initDecoderWithDumpfile();
             return null;
         } else if (isVpn) {
-            //TODO: VPN branch - read from CloneBuffer
+            // VPN branch - read from CloneBuffer
+            Log.i(Const.LOG_TAG,"VPN core not yet implemented");
             return null;
         }
         return null;
@@ -139,11 +141,7 @@ public class AnalyzerService extends Service {
         try {
             FileInputStream fis = new FileInputStream(file);
             int b = fis.read();
-            if (b == -1) {
-                mIsFileEmpty = true;
-            } else {
-                mIsFileEmpty = false;
-            }
+            mIsFileEmpty = b == -1;
         } catch (IOException e) {
             e.printStackTrace();
         }
