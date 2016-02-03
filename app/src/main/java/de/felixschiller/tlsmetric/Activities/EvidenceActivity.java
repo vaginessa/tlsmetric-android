@@ -70,9 +70,9 @@ public class EvidenceActivity extends AppCompatActivity{
                         .withEndAction(new Runnable() {
                             @Override
                             public void run() {
-                                if(ann.filter.severity != 4){
-                                    mCurrentList = Evidence.mEvidenceDetail.get(ann.srcPort);
-                                    adapter.notifyDataSetChanged();
+                                if (ann.filter.severity != 4) {
+                                    EvidenceAdapter newAdapter = new EvidenceAdapter(getApplicationContext(), Evidence.mEvidenceDetail.get(ann.srcPort));
+                                    listview.setAdapter(newAdapter);
                                 } else {
                                     Toast toast = Toast.makeText(ContextSingleton.getContext(), "No detail availiable for this connection", Toast.LENGTH_LONG);
                                     toast.show();
