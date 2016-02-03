@@ -20,6 +20,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public class EvidenceActivity extends AppCompatActivity{
         //Toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.evidence_toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setLogo(R.drawable.icon_036);
+        toolbar.setLogo(R.drawable.icon_36);
         toolbar.setLogoDescription(R.string.app_name);
 
         //EvidenceList
@@ -64,13 +65,19 @@ public class EvidenceActivity extends AppCompatActivity{
             @Override
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
-                final Announcement item = (Announcement) parent.getItemAtPosition(position);
+                final Announcement ann = (Announcement) parent.getItemAtPosition(position);
                 view.animate().setDuration(500).alpha((float)0.5)
                         .withEndAction(new Runnable() {
                             @Override
                             public void run() {
-                                mCurrentList = Evidence.mEvidenceDetail.get(item.srcPort);
-                                adapter.notifyDataSetChanged();
+                                if(ann.filter.severity != 4){
+                                    mCurrentList = Evidence.mEvidenceDetail.get(ann.srcPort);
+                                    adapter.notifyDataSetChanged();
+                                } else {
+                                    Toast toast = Toast.makeText(ContextSingleton.getContext(), "No detail availiable for this connection", Toast.LENGTH_LONG);
+                                    toast.show();
+                                }
+
                             }
                         });
             }

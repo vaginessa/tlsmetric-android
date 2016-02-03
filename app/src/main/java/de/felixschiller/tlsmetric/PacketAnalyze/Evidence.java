@@ -41,17 +41,19 @@ public class Evidence {
     public static HashMap<Integer, ArrayList<Announcement>> mEvidenceDetail;
     public static boolean newData;
     public static File mResolveFile;
-    public static HashMap<Integer, Integer> mPortPidMap;
     public static HashMap<Integer, PackageInformation> mPacketInfoMap;
+    public static HashMap<Integer, Integer> mPortPidMap = new HashMap<>();
+    public static HashMap<Integer, Integer> mUidPidMap = new HashMap<>();
 
     public Evidence(){
         mEvidence = new ArrayList<>();
         mEvidenceDetail = new HashMap<>();
         newData = false;
         mResolveFile =  new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_RESOLVE_PID);
-        mPortPidMap = generatePortPidMap();
         mPacketInfoMap = new HashMap<>();
+        updatePortPidMap();
         updateConnections();
+
     }
 
     public void updateConnections(){
@@ -116,7 +118,7 @@ public class Evidence {
 
         if (pkt.hasHeader("TCP") && pkt.hasDataHeader()) {
             byte[] b = pkt.getDataValue();
-            if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, b.length + " Bytes data found");
+            //if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, b.length + " Bytes data found");
             if (b.length > 0){
                 ByteBuffer bb = ByteBuffer.allocate(b.length);
                 bb.put(b);
@@ -225,7 +227,7 @@ public class Evidence {
 
     private static int getPidByPort(int port) {
         if(!mPortPidMap.containsKey(port)){
-            generatePortPidMap();
+            updatePortPidMap();
             if(mPortPidMap.containsKey(port)){
                 return mPortPidMap.get(port);
             } else{
@@ -237,62 +239,32 @@ public class Evidence {
         }
     }
 
-
-    public static HashMap<Integer, Integer> generatePortPidMap(){
-        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Generating Port-to-Pid Map.");
-        HashMap<Integer, Integer> portPidMap = new HashMap<>();
+    private static void updatePortPidMap() {
+        updateUidPidMap();
         HashMap<Integer, Integer> portUidMap = getPortMap();
-        HashMap<Integer, Integer> uidPidMap = getPidMap();
-        Set<Integer> set = portUidMap.keySet();
-        for (int key : set) {
-            int uid = portUidMap.get(key);
-            if(uidPidMap.containsKey(uid)){
-                portPidMap.put(key, uidPidMap.get(uid));
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "PortPidMap matched uid " + uid +
-                        "->" + key + ", " + uidPidMap.get(uid) + ">" );
-            } else if(uid == 0){
-                portPidMap.put(key, 0);
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Root uid " + uid +
-                        ": " + key + ", " + 0 );
-            } else {
-                portPidMap.put(key, -1);
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Could not match by uid " + uid +
-                        ": " + key + ", " + -1 );
+        Set<Integer> ports = portUidMap.keySet();
+        for (int port :ports){
+            if(!mPortPidMap.containsKey(port) && mUidPidMap.containsKey(portUidMap.get(port))){
+                mPortPidMap.put(port, mUidPidMap.get(portUidMap.get(port)));
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"mapping port to pid: " + port + " ->" + mUidPidMap.get(portUidMap.get(port)));
             }
         }
-    return portPidMap;
     }
 
-    public static HashMap<Integer, Integer> getPidMap(){
-        HashMap<Integer, Integer> result = new HashMap<>();
-        int[] pids = getPids();
 
-        String[] split;
-        for (int pid : pids) {
-            String command = "cat /proc/" + pid + "/status";
-            String readIn = ExecuteCommand.userForResult(command);
-            int pos = readIn.indexOf("Uid:");
-            try {
-                readIn = readIn.substring(pos, pos + 20);
-            } catch (StringIndexOutOfBoundsException e){
-                Log.e(Const.LOG_TAG, "Readin of uid of process " + pid + " failed, StringIndexOutOfBounds.");
-            }
 
-            split = readIn.split("\\t");
-            if(split.length > 1) {
-                try {
-                    int uid = Integer.parseInt(split[1]);
-                    Log.d(Const.LOG_TAG, "pid to uid: " + pid + "->" + uid);
-                    result.put(uid, pid);
-                } catch (NumberFormatException e) {
-                    Log.e(Const.LOG_TAG, "Parsing of UID failed! " + split[1] + " Pid: " + pid);
-                    result.put(-1, pid);
-                }
+
+    public static void updateUidPidMap(){
+        ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> infos = am.getRunningAppProcesses();
+        for (ActivityManager.RunningAppProcessInfo info : infos) {
+            if(!mUidPidMap.containsKey(info.uid)){
+                mUidPidMap.put(info.uid, info.pid);
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Adding uid/pid: " + info.uid + " -> " + info.pid);
             }
         }
-
-        return result;
     }
+
 
     public static int[] getPids() {
         ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
@@ -310,13 +282,13 @@ public class Evidence {
         String commandTcp4 = "cat /proc/net/tcp";
         String commandTcp6 = "cat /proc/net/tcp6";
 
-        parseNetOutpur(ExecuteCommand.userForResult(commandTcp4), result);
-        parseNetOutpur(ExecuteCommand.userForResult(commandTcp6), result);
+        parseNetOutput(ExecuteCommand.userForResult(commandTcp4), result);
+        parseNetOutput(ExecuteCommand.userForResult(commandTcp6), result);
 
         return result;
     }
 
-    public static void parseNetOutpur(String readIn, HashMap<Integer, Integer> hashMap) {
+    public static void parseNetOutput(String readIn, HashMap<Integer, Integer> hashMap) {
         String[] splitLines;
         String[] splitTabs;
 
@@ -352,8 +324,66 @@ public class Evidence {
 
     private static PackageInformation generateDummy() {
         PackageInformation pi = new PackageInformation();
-        pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.drawable.icon_048);
+        pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.mipmap.icon);
         pi.packageName = "Unknown App";
         return pi;
     }
+
+    /*    public static HashMap<Integer, Integer> generatePortPidMap(){
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Generating Port-to-Pid Map.");
+        HashMap<Integer, Integer> portPidMap = new HashMap<>();
+        HashMap<Integer, Integer> portUidMap = getPortMap();
+
+        Set<Integer> set = portUidMap.keySet();
+        for (int key : set) {
+            int uid = portUidMap.get(key);
+            if(mUidPidMap.containsKey(uid)){
+                portPidMap.put(key, mUidPidMap.get(uid));
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "PortPidMap matched uid " + uid +
+                        "->" + key + ", " + mUidPidMap.get(uid) );
+            } else if(uid == 0){
+                portPidMap.put(key, 0);
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Root uid " + uid +
+                        ": " + key + ", " + 0 );
+            } else {
+                portPidMap.put(key, -1);
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Could not match by uid " + uid +
+                        ": " + key + ", " + -1 );
+            }
+        }
+    return portPidMap;
+    }*/
+
+    /*
+    public static HashMap<Integer, Integer> getPidMap(){
+        HashMap<Integer, Integer> result = new HashMap<>();
+        int[] pids = getPids();
+
+        String[] split;
+        for (int pid : pids) {
+            String command = "cat /proc/" + pid + "/status";
+            String readIn = ExecuteCommand.userForResult(command);
+            int pos = readIn.indexOf("Uid:");
+            try {
+                readIn = readIn.substring(pos, pos + 20);
+            } catch (StringIndexOutOfBoundsException e){
+                Log.e(Const.LOG_TAG, "Readin of uid of process " + pid + " failed, StringIndexOutOfBounds.");
+            }
+
+            split = readIn.split("\\t");
+            if(split.length > 1) {
+                try {
+                    int uid = Integer.parseInt(split[1]);
+                    Log.d(Const.LOG_TAG, "pid to uid: " + pid + "->" + uid);
+                    result.put(uid, pid);
+                } catch (NumberFormatException e) {
+                    Log.e(Const.LOG_TAG, "Parsing of UID failed! " + split[1] + " Pid: " + pid);
+                    result.put(-1, pid);
+                }
+            }
+        }
+
+        return result;
+    }*/
+
 }

@@ -121,7 +121,7 @@ public class AnalyzerService extends Service {
                 return null;
             }
         } else if (mIsFileEmpty) {
-            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "File is Empty. Reinitialize.");
+            //if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "File is Empty. Reinitialize.");
             initDecoderWithDumpfile();
             return null;
         } else if (isVpn) {
@@ -134,7 +134,7 @@ public class AnalyzerService extends Service {
 
     private void analyzePacket(Packet pkt){
         mEvidence.processPacket(pkt);
-        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, pkt.getSummary());
+        //if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, pkt.getSummary());
     }
 
     private void checkEmptyFile(File file) {

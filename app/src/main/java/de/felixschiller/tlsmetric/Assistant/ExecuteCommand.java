@@ -30,7 +30,7 @@ public class ExecuteCommand extends Thread {
 
     //Execute user commands and get the result.
     public static String userForResult(String string) {
-        //if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Executing for result as user: " + string);
+        if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Executing for result as user: " + string);
         String res = "";
         DataOutputStream outputStream = null;
         InputStream response = null;
