@@ -13,6 +13,8 @@ import com.voytechs.jnetstream.primitive.address.Address;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.Assistant.ExecuteCommand;
 import de.felixschiller.tlsmetric.Assistant.ToolBox;
+import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Empty;
 import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Filter;
 import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Identifyer;
 import de.felixschiller.tlsmetric.R;
@@ -48,8 +51,27 @@ public class Evidence {
         mResolveFile =  new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_RESOLVE_PID);
         mPortPidMap = generatePortPidMap();
         mPacketInfoMap = new HashMap<>();
-
+        updateConnections();
     }
+
+    public void updateConnections(){
+        Set<Integer> ports = mPortPidMap.keySet();
+            for(int i =0; i< mEvidence.size(); i++){
+                int con = mEvidence.get(i).srcPort;
+                if (ports.contains(con)){
+                    ports.remove(con);
+                }
+            }
+        for (int port: ports) {
+            Announcement ann = new Announcement();
+            ann.filter = new Empty(Filter.Protocol.UNKNOWN,4,"No connection data.");
+            ann.srcPort = port;
+            fillAppData(ann);
+            ann.url = "unknown";
+            addEvidenceEntry(ann);
+        }
+   }
+
 
     public void processPacket(Packet pkt) {
         Filter filter = scanPacket(pkt);
@@ -65,11 +87,11 @@ public class Evidence {
 
         boolean updated = false;
 
-        //Check and update existing connections with lesser filter severity
+        //Check and update existing connections with lesser filter severity or unknown connection (4)
         for(int i =0; i< mEvidence.size(); i++){
             if(mEvidence.get(i).srcPort == ann.srcPort){
                 updated = true;
-                if(mEvidence.get(i).filter.severity < ann.filter.severity){
+                if(mEvidence.get(i).filter.severity < ann.filter.severity || mEvidence.get(i).filter.severity == 4){
                     mEvidence.set(i, ann);
                 }
             }
@@ -108,7 +130,11 @@ public class Evidence {
                 }
 
                 bb.position(0);
-                bb.get(identChunk);
+                try {
+                    bb.get(identChunk);
+                }catch (BufferOverflowException |BufferUnderflowException e) {
+                    Log.e(Const.LOG_TAG, "Could not read identChunk from TCP packet.");
+                }
                 return Identifyer.indent(identChunk);
             } else return null;
         } else {
@@ -173,7 +199,7 @@ public class Evidence {
     private static void fillAppData(Announcement ann) {
         ann.pid = getPidByPort(ann.srcPort);
 
-        if (ann.pid > 0 && !mPacketInfoMap.containsKey(ann.pid)){
+        if (ann.pid >= 0 && !mPacketInfoMap.containsKey(ann.pid)){
             PackageManager pm = ContextSingleton.getContext().getPackageManager();
             ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
             PackageInformation pi = new PackageInformation();
@@ -199,7 +225,6 @@ public class Evidence {
 
 
     private static int getPidByPort(int port) {
-
         if(!mPortPidMap.containsKey(port)){
             generatePortPidMap();
             if(mPortPidMap.containsKey(port)){
@@ -224,8 +249,12 @@ public class Evidence {
             int uid = portUidMap.get(key);
             if(uidPidMap.containsKey(uid)){
                 portPidMap.put(key, uidPidMap.get(uid));
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Add entry to PortPidMap by matched uid " + uid +
-                        ": <" + key + ", " + uidPidMap.get(uid) + ">" );
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "PortPidMap matched uid " + uid +
+                        "->" + key + ", " + uidPidMap.get(uid) + ">" );
+            } else if(uid == 0){
+                portPidMap.put(key, 0);
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Root uid " + uid +
+                        ": " + key + ", " + 0 );
             } else {
                 portPidMap.put(key, -1);
                 if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Could not match by uid " + uid +
@@ -243,7 +272,7 @@ public class Evidence {
         for (int pid : pids) {
             String command = "cat /proc/" + pid + "/status";
             String readIn = ExecuteCommand.userForResult(command);
-            int pos = readIn.indexOf("Uid");
+            int pos = readIn.indexOf("Uid:");
             try {
                 readIn = readIn.substring(pos, pos + 20);
             } catch (StringIndexOutOfBoundsException e){
@@ -254,13 +283,15 @@ public class Evidence {
             if(split.length > 1) {
                 try {
                     int uid = Integer.parseInt(split[1]);
+                    Log.d(Const.LOG_TAG, "pid to uid: " + pid + "->" + uid);
                     result.put(uid, pid);
                 } catch (NumberFormatException e) {
                     Log.e(Const.LOG_TAG, "Parsing of UID failed! " + split[1] + " Pid: " + pid);
-                    result.put(0, pid);
+                    result.put(-1, pid);
                 }
             }
         }
+
         return result;
     }
 
@@ -307,6 +338,7 @@ public class Evidence {
             int srcPort = bb.getInt();
             int uid = Integer.parseInt(splitTabs[7]);
             hashMap.put(srcPort, uid);
+            if (Const.IS_DEBUG)Log.d(Const.LOG_TAG,"port to uid:" + srcPort + " -> " + uid);
         }
     }
 

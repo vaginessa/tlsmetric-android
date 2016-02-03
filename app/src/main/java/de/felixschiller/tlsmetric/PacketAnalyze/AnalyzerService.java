@@ -119,7 +119,7 @@ public class AnalyzerService extends Service {
                 return null;
             }
         } else if (mIsFileEmpty) {
-            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "File is empty, try to init it again.");
+            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "File is Empty, try to init it again.");
             initDecoderWithDumpfile();
             return null;
         } else if (isVpn) {
@@ -139,7 +139,7 @@ public class AnalyzerService extends Service {
             FileInputStream fis = new FileInputStream(file);
             int b = fis.read();
             if (b == -1) {
-                System.out.println("File " + file.getAbsolutePath() + " is empty!");
+                System.out.println("File " + file.getAbsolutePath() + " is Empty!");
                 mIsFileEmpty = true;
             } else {
                 mIsFileEmpty = false;

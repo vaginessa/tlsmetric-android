@@ -59,8 +59,6 @@ public class EvidenceActivity extends AppCompatActivity{
         listview.setAdapter(adapter);
 
         listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-            //TODO: Open detail Page on Click
             @Override
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
@@ -69,16 +67,13 @@ public class EvidenceActivity extends AppCompatActivity{
                         .withEndAction(new Runnable() {
                             @Override
                             public void run() {
-                                //filterList.remove(item);
+                                //TODO: Open detail Page on Click
                                 adapter.notifyDataSetChanged();
-                                view.setAlpha(1);
                             }
                         });
             }
 
         });
-
-        //TODO: UpdateLoopForAdapter
     }
 
 
@@ -131,9 +126,12 @@ public class EvidenceActivity extends AppCompatActivity{
             } else if (severity == 1) {
                 imageStatusView.setImageResource(R.drawable.icon_warn_036);
                 imageStatusView.setBackgroundColor(Color.YELLOW);
-            } else {
+            }else if (severity == 4) {
                 imageStatusView.setImageResource(R.drawable.icon_ok_036);
-                imageStatusView.setBackgroundColor(Color.YELLOW);
+                imageStatusView.setBackgroundColor(Color.GRAY);
+            } else if (severity == 0){
+                imageStatusView.setImageResource(R.drawable.icon_ok_036);
+                imageStatusView.setBackgroundColor(Color.GREEN);
             }
 
             //Status Text

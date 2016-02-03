@@ -18,12 +18,15 @@ public abstract class Filter {
     }
 
     public enum Protocol {
+        UNKNOWN,
         HTTP,
+        SSL1,
         SSL2,
         SSL3,
         TLS10,
         TLS11,
-        TLS12, SSL1,
+        TLS12,
+
     }
 
 }

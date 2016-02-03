@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
         // Test for Root Acces and Logging
         CheckDependencies.checkSu();
 
+/*
         Button buttStart = (Button) findViewById(R.id.fabStart);
         buttStart.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -68,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
                 stopService(intent);
             }
         });
+*/
 
         Button startDump = (Button) findViewById(R.id.startDump);
         startDump.setOnClickListener(new View.OnClickListener() {
@@ -76,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar.make(view, "Start TLSMetric(Root) Service.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
                 DumpHandler.start();
                 DumpHandler.startAnalyzerService();
+                minimizeActivity();
             }
         });
 
@@ -140,6 +143,13 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK) {
             VpnBypassService.start(this);
         }
+    }
+
+    private void minimizeActivity(){
+        Intent startMain = new Intent(Intent.ACTION_MAIN);
+        startMain.addCategory(Intent.CATEGORY_HOME);
+        startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(startMain);
     }
 
 }
