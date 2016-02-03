@@ -175,8 +175,6 @@ public class EvidenceActivity extends AppCompatActivity{
 
     @Override
     public void onDestroy(){
-        //kill the singleton
-        ContextSingleton.setContext(null);
         super.onDestroy();
     }
 

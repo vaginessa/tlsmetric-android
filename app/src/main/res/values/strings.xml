@@ -1,25 +1,31 @@
 <resources>
-    <string name="app_name">TLSMetric</string>
-    <string name="action_settings">Settings</string>
-    <string name="statusText">Welcome to TLS-Metric</string>
-    <string name="buttTextStart">TLS Metric with VPN.</string>
-    <string name="buttTextStop">Stop VPN-Bypass</string>
-    <string name="startDump">TLS Metric with TCPDump.</string>
-    <string name="stopDump">Stop TCPDump.</string>
-    <string name="dummy">Dummybutton</string>
-    <string name="gotoEvidence">GOTO: Evidence</string>
+    <!-- UI main text -->
+    <string name="info_handle">Press power button to start TLSMetric</string>
+    <string name="info_starting">Starting network dump</string>
+    <string name="info_waiting">Waiting for connection data</string>
+    <string name="info_running">TLS Metric running</string>
+    <string name="info_stopping">Stopping TLS Metric</string>
 
-    <string name="ALERT_HTTP">HTTP warning String</string>
-    <string name="ALERT_TLS_10">TLS warning String</string>
-    <string name="ALERT_TLS_03">TLS warning String</string>
-    <string name="ALERT_TLS_12">TLS warning String</string>
-    <string name="ALERT_TLS_11">TLS warning String</string>
+    <!-- UI evidence text -->
     <string name="evidenceSecondLine">Severity:</string>
     <string name="title_activity_shifty">ShiftyActivity</string>
     <string name="action_back">Back to Main</string>
     <string name="action_refresh">refresh view</string>
     <string name="headline_evidence">Active Connections</string>
-    <string name="title_activity_main2">Main2Activity</string>
+
+    <!-- Toasts and Snacks -->
+    <string name="app_name">TLSMetric</string>
+    <string name="startDump">TLS Metric with TCPDump.</string>
+    <string name="stopDump">Stop TCPDump.</string>
+    <string name="gotoEvidence">inspect connections</string>
+
+    <!-- Filter warning text -->
+    <string name="ALERT_HTTP">HTTP warning String</string>
+    <string name="ALERT_TLS_10">TLS warning String</string>
+    <string name="ALERT_TLS_03">TLS warning String</string>
+    <string name="ALERT_TLS_12">TLS warning String</string>
+    <string name="ALERT_TLS_11">TLS warning String</string>
+    <string name="action_settings">settings</string>
 
 
 </resources>

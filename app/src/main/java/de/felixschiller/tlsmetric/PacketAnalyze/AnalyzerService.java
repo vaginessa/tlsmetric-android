@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
+import de.felixschiller.tlsmetric.R;
 import de.felixschiller.tlsmetric.RootDump.DumpHandler;
 
 
@@ -119,7 +120,7 @@ public class AnalyzerService extends Service {
                 return null;
             }
         } else if (mIsFileEmpty) {
-            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "File is Empty, try to init it again.");
+            if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "File is Empty. Reinitialize.");
             initDecoderWithDumpfile();
             return null;
         } else if (isVpn) {
@@ -139,7 +140,6 @@ public class AnalyzerService extends Service {
             FileInputStream fis = new FileInputStream(file);
             int b = fis.read();
             if (b == -1) {
-                System.out.println("File " + file.getAbsolutePath() + " is Empty!");
                 mIsFileEmpty = true;
             } else {
                 mIsFileEmpty = false;

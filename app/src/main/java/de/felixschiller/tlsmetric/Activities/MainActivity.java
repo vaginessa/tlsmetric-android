@@ -4,8 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -13,10 +11,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.Assistant.ToolBox;
-import de.felixschiller.tlsmetric.PacketAnalyze.Evidence;
 import de.felixschiller.tlsmetric.R;
 import de.felixschiller.tlsmetric.RootDump.CheckDependencies;
 import de.felixschiller.tlsmetric.RootDump.DumpHandler;
@@ -56,41 +52,38 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
-        Button buttStop = (Button) findViewById(R.id.fabStop);
-        buttStop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Try to stop VPN-Service");
-                Snackbar.make(view, "Try to stop VPN loopback service...", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                // stop VPN Client
-                Intent intent = new Intent(getApplicationContext(), VpnBypassService.class);
-                stopService(intent);
-            }
-        });
 */
-
-        Button startDump = (Button) findViewById(R.id.startDump);
-        startDump.setOnClickListener(new View.OnClickListener() {
+        final Button startStop = (Button) findViewById(R.id.startStop);
+        startStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Start TLSMetric(Root) Service.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
-                DumpHandler.start();
-                DumpHandler.startAnalyzerService();
-                minimizeActivity();
+                TextView infoText = (TextView) findViewById(R.id.infoText);
+                if(!ToolBox.isAnalyzerServiceRunning()) {
+                    infoText.setText(R.string.info_starting);
+                    startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
+                    DumpHandler.start();
+                    infoText.setText(R.string.info_waiting);
+                    DumpHandler.startAnalyzerService();
+                    infoText.setText(R.string.info_running);
+                    startStop.setBackground(getResources().getDrawable(R.drawable.power_on));
+                    minimizeActivity();
+                } else {
+                    infoText.setText(R.string.info_stopping);
+                    startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
+                    DumpHandler.stopAnalyzerService();
+                    DumpHandler.stop();
+                    infoText.setText(R.string.info_handle);
+                    startStop.setBackground(getResources().getDrawable(R.drawable.power_off));
+                }
             }
         });
 
-        Button stopDump = (Button) findViewById(R.id.stopDump);
-        stopDump.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Stop TLSMetric(Root) Service", Snackbar.LENGTH_LONG).setAction("Action", null).show();
-                DumpHandler.stopAnalyzerService();
-                DumpHandler.stop();
-            }
-        });
+        //Set button image
+        if(ToolBox.isAnalyzerServiceRunning()) {
+            startStop.setBackground(getResources().getDrawable(R.drawable.power_on));
+        } else {
+            startStop.setBackground(getResources().getDrawable(R.drawable.power_off));
+        }
 
         Button gotoEvidence = (Button) findViewById(R.id.gotoEvidence);
         gotoEvidence.setOnClickListener(new View.OnClickListener() {
@@ -133,8 +126,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy(){
-        //Kill the Singleton
-        ContextSingleton.setContext(null);
         super.onDestroy();
 
     }
