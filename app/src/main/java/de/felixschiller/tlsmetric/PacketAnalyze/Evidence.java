@@ -96,19 +96,21 @@ public class Evidence {
         if (pkt.hasHeader("TCP") && pkt.hasDataHeader()) {
             byte[] b = pkt.getDataValue();
             if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, b.length + " Bytes data found");
-            ByteBuffer bb = ByteBuffer.allocate(b.length);
-            bb.put(b);
+            if (b.length > 0){
+                ByteBuffer bb = ByteBuffer.allocate(b.length);
+                bb.put(b);
 
-            byte[] identChunk;
-            if (b.length >= 12){
-                identChunk = new byte[20];
-            } else{
-                identChunk = new byte[b.length];
-            }
-            
-            bb.position(0);
-            bb.get(identChunk);
-            return Identifyer.indent(identChunk);
+                byte[] identChunk;
+                if (b.length >= 12){
+                    identChunk = new byte[20];
+                } else {
+                    identChunk = new byte[b.length];
+                }
+
+                bb.position(0);
+                bb.get(identChunk);
+                return Identifyer.indent(identChunk);
+            } else return null;
         } else {
             return null;
         }

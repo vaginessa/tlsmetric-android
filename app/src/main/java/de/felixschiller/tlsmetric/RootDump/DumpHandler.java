@@ -1,5 +1,6 @@
 package de.felixschiller.tlsmetric.RootDump;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
@@ -19,63 +20,50 @@ import de.felixschiller.tlsmetric.PacketAnalyze.AnalyzerService;
 import de.felixschiller.tlsmetric.R;
 
 /**
- * Created by schillef on 10.01.2016.
+ * Handel the execution of tcpdump binary (android port) and starts the analyzer service.
  */
 public class DumpHandler {
-    private static File mFile;
-    private static File mBin;
-    private static String mBinPath;
-    private static String mFilePath;
-
-    public DumpHandler(){
-        mFile = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
-        mBin = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_TCPDUMP);
-        mBinPath = ContextSingleton.getContext().getFilesDir().getAbsolutePath() + File.separator + Const.FILE_TCPDUMP;
-        mFilePath = ContextSingleton.getContext().getFilesDir().getAbsolutePath() + File.separator + Const.FILE_DUMP;
-    }
 
     //start the tcpdump process
-    public void start(){
-        if (!mBin.exists()){
+    public static void start(){
+        File bin = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_TCPDUMP);
+        File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
+        if (!bin.exists()){
             deployTcpDump(ContextSingleton.getContext());
         } else {
             if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "tcpdump present.");
         }
-        if (mFile.exists()){
+        if (file.exists()){
             deleteDumpFile();
         }
         //kill existing processes
         stop();
-        String command = DumpHandler.generateCommand();
+
         //Start tcp dump with su rights
+        String command = DumpHandler.generateCommand();
         if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Try to start tcpdump");
         ExecuteCommand.sudo(command);
     }
 
     //stop the tcpdump process
-    public void stop(){
+    public static void stop(){
         ExecuteCommand.sudo("killall tcpdump");
     }
 
-    //restart the tcpdump process
-    public void restart(){
-        stop();
-        start();
-    }
-
     //Extract the tcpdump binary to /system/bin folder
-    public void deployTcpDump(Context context){
+    public static void deployTcpDump(Context context){
+        File bin = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_TCPDUMP);
         try {
             if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Extract tcpdump.");
             InputStream in = context.getResources().openRawResource(R.raw.tcpdump);
             byte[] buffer = new byte[in.available()];
             in.read(buffer);
-            OutputStream out = new FileOutputStream(mBin);
+            OutputStream out = new FileOutputStream(bin);
             out.write(buffer);
         } catch (Exception e) {
             Log.e(Const.LOG_TAG, "Deserialization of binary files failed", e);
         }
-        ExecuteCommand.user("chmod 6755 " + mBinPath);
+        ExecuteCommand.user("chmod 6755 " + bin.getAbsolutePath());
     }
 
         /*Run dump on active interface.
@@ -92,15 +80,14 @@ public class DumpHandler {
      */
 
     public static String generateCommand() {
-        return mBinPath + " " + Const.PARAMS + " " + mFilePath + " &";
+        File bin = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_TCPDUMP);
+        File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
+        return bin.getAbsolutePath() + " " + Const.PARAMS + " " + file.getAbsolutePath() + " &";
     }
 
     public static void deleteDumpFile(){
-        deleteFile(mFile);
-    }
-
-    public static void deleteTcpDumpBin(){
-        deleteFile(mBin);
+        File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
+        deleteFile(file);
     }
 
     private static void deleteFile(File file){
@@ -115,18 +102,19 @@ public class DumpHandler {
         }
     }
 
-    public void startAnalyzerService(){
+    public static void startAnalyzerService(){
+        File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
         for(int i = 0; i < 10; i++){
-            if(mFile.exists()) {
+            if(file.exists()) {
                 if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Dump file present, edit permissions.");
-                ExecuteCommand.sudo("chmod 6755 " + mFilePath);
+                ExecuteCommand.sudo("chmod 6755 " + file.getAbsolutePath());
                 Intent intent = new Intent(ContextSingleton.getContext(), AnalyzerService.class);
                 ContextSingleton.getActivity().startService(intent);
                 break;
             } else {
-                Log.i(Const.LOG_TAG, mFile.getAbsolutePath() + "does not exist. Wait for dump process " + (10 - i) + " times...");
+                Log.i(Const.LOG_TAG, file.getAbsolutePath() + "does not exist. Wait for dump process " + (10 - i) + " times...");
                 if(i == 9) {
-                    Log.e(Const.LOG_TAG, mFile.getAbsolutePath() + "does not exist. Service not started");
+                    Log.e(Const.LOG_TAG, file.getAbsolutePath() + "does not exist. Service not started");
                 }
                 try {
                     Thread.sleep(1000);
@@ -137,10 +125,8 @@ public class DumpHandler {
         }
     }
 
-    public void stopAnalyzerService(){
+    public static void stopAnalyzerService(){
         AnalyzerService.mInterrupt = true;
-        /*Intent intent = new Intent(ContextSingleton.getContext(), AnalyzerService.class);
-        ContextSingleton.getContext().stopService(intent);*/
     }
 
 
@@ -154,8 +140,6 @@ public class DumpHandler {
             Toast toast = Toast.makeText(ContextSingleton.getContext(), "Superuser is NOT installed. \n" +
                     "opening download screen", Toast.LENGTH_LONG);
             toast.show();
-            //TODO: Does not Work, Why?
-            //RootTools.offerSuperUser(MainActivity.sActivity);
         }
     }
 

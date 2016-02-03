@@ -41,14 +41,14 @@ public class AnalyzerService extends Service {
     @Override
     public void onCreate() {
         mInterrupt = false;
-
+        isVpn = false;
         mBufferPosition = 0;
 
         if(!isVpn){
             mDumpFile = new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_DUMP);
             initDecoderWithDumpfile();
         } else {
-            //TODO: Init mDecoder set to CloneBuffer
+            //TODO: VPN branch : Init mDecoder set to CloneBuffer
         }
     }
 

@@ -11,9 +11,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
+import de.felixschiller.tlsmetric.Assistant.ToolBox;
 import de.felixschiller.tlsmetric.PacketAnalyze.Evidence;
 import de.felixschiller.tlsmetric.R;
 import de.felixschiller.tlsmetric.RootDump.CheckDependencies;
@@ -22,9 +24,6 @@ import de.felixschiller.tlsmetric.VpnDump.VpnBypassService;
 
 public class MainActivity extends AppCompatActivity {
 
-
-    private TextView mStatusText;
-    private DumpHandler mDumpHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,17 +34,9 @@ public class MainActivity extends AppCompatActivity {
         //Fill the Singleton
         ContextSingleton.setContext(this);
 
-        //TODO: Change this!
-        //Create an Empty evidence
-        Evidence evidence = new Evidence();
-
         //TODO: Change Sudo tests
         // Test for Root Acces and Logging
-        CheckDependencies checkDependencies = new CheckDependencies();
-        checkDependencies.testAll();
-
-        mStatusText = (TextView) findViewById(R.id.testText);
-
+        CheckDependencies.checkSu();
 
         Button buttStart = (Button) findViewById(R.id.fabStart);
         buttStart.setOnClickListener(new View.OnClickListener() {
@@ -83,9 +74,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Snackbar.make(view, "Start TLSMetric(Root) Service.", Snackbar.LENGTH_LONG).setAction("Action", null).show();
-                mDumpHandler = new DumpHandler();
-                mDumpHandler.start();
-                mDumpHandler.startAnalyzerService();
+                DumpHandler.start();
+                DumpHandler.startAnalyzerService();
             }
         });
 
@@ -94,8 +84,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Snackbar.make(view, "Stop TLSMetric(Root) Service", Snackbar.LENGTH_LONG).setAction("Action", null).show();
-                mDumpHandler.stopAnalyzerService();
-                mDumpHandler.stop();
+                DumpHandler.stopAnalyzerService();
+                DumpHandler.stop();
             }
         });
 
@@ -103,8 +93,14 @@ public class MainActivity extends AppCompatActivity {
         gotoEvidence.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(ContextSingleton.getContext(), EvidenceActivity.class);
-                startActivity(intent);
+                if(ToolBox.isAnalyzerServiceRunning()){
+                    Intent intent = new Intent(ContextSingleton.getContext(), EvidenceActivity.class);
+                    startActivity(intent);
+                } else {
+                    Toast toast = Toast.makeText(ContextSingleton.getContext(), "Packet Analyzer Service is not started.", Toast.LENGTH_LONG);
+                    toast.show();
+                }
+
             }
         });
     }
@@ -145,7 +141,5 @@ public class MainActivity extends AppCompatActivity {
             VpnBypassService.start(this);
         }
     }
-
-
 
 }

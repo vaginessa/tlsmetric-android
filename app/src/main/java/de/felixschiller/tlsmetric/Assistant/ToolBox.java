@@ -1,5 +1,6 @@
 package de.felixschiller.tlsmetric.Assistant;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.util.Log;
 
@@ -13,6 +14,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 
+import de.felixschiller.tlsmetric.PacketAnalyze.AnalyzerService;
 import de.felixschiller.tlsmetric.R;
 
 /**
@@ -87,6 +89,16 @@ public class ToolBox{
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static boolean isAnalyzerServiceRunning() {
+        ActivityManager manager = (ActivityManager)ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (AnalyzerService.class.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
