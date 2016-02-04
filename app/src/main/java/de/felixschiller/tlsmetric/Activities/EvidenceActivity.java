@@ -33,7 +33,6 @@ import de.felixschiller.tlsmetric.PacketAnalyze.PackageInformation;
 import de.felixschiller.tlsmetric.R;
 
 public class EvidenceActivity extends AppCompatActivity{
-    ArrayList<Announcement> mCurrentList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,12 +51,11 @@ public class EvidenceActivity extends AppCompatActivity{
 
         final EvidenceAdapter adapter;
         if(Evidence.mEvidence != null){
-            mCurrentList = Evidence.mEvidence;
+            adapter = new EvidenceAdapter(this, Evidence.getSortedEvidence());
         } else {
             if(Const.IS_DEBUG) Log.e(Const.LOG_TAG, "Evidence list not existing or empty!");
-            mCurrentList = new ArrayList<>();
+            adapter = new EvidenceAdapter(this, new ArrayList<Announcement>());
         }
-        adapter = new EvidenceAdapter(this, mCurrentList);
 
         listview.setAdapter(adapter);
 
@@ -71,13 +69,12 @@ public class EvidenceActivity extends AppCompatActivity{
                             @Override
                             public void run() {
                                 if (ann.filter.severity != -1) {
-                                    EvidenceAdapter newAdapter = new EvidenceAdapter(getApplicationContext(), Evidence.mEvidenceDetail.get(ann.srcPort));
+                                    EvidenceAdapter newAdapter = new EvidenceAdapter(getApplicationContext(), Evidence.getSortedEvidenceDetail(ann.srcPort));
                                     listview.setAdapter(newAdapter);
                                 } else {
                                     Toast toast = Toast.makeText(ContextSingleton.getContext(), "No detail availiable for this connection", Toast.LENGTH_LONG);
                                     toast.show();
                                 }
-
                             }
                         });
             }
