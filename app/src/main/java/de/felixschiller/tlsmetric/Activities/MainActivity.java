@@ -35,26 +35,6 @@ public class MainActivity extends AppCompatActivity {
         // Test for Root Acces and Logging
         CheckDependencies.checkSu();
 
-/*
-        Button buttStart = (Button) findViewById(R.id.fabStart);
-        buttStart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (Const.IS_DEBUG)Log.d(getResources().getString(R.string.app_name), "Try to start VPN-Service");
-                Snackbar.make(view, "Try to start VPN loopback service...", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                // start VPN client
-                Intent intent = VpnBypassService.prepare(getApplicationContext());
-                if (intent != null) {
-                    startActivityForResult(intent, 0);
-                } else {
-                    onActivityResult(0, RESULT_OK, null);
-                }
-
-            }
-        });
-*/
-
         isRunning = ToolBox.isAnalyzerServiceRunning();
 
         final Button startStop = (Button) findViewById(R.id.startStop);
@@ -63,22 +43,21 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 TextView infoText = (TextView) findViewById(R.id.infoText);
                 if(!isRunning) {
+                    startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
                     isRunning = true;
                     infoText.setText(R.string.info_starting);
                     if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "begin start sequence.");
-                    startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
                     DumpHandler.start();
                     infoText.setText(R.string.info_waiting);
                     DumpHandler.startAnalyzerService();
                     infoText.setText(R.string.info_running);
                     startStop.setBackground(getResources().getDrawable(R.drawable.power_on));
-
                     minimizeActivity();
                 } else {
+                    startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
                     isRunning = false;
                     if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "begin stop sequence.");
                     infoText.setText(R.string.info_stopping);
-                    startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
                     DumpHandler.stopAnalyzerService();
                     DumpHandler.stop();
                     infoText.setText(R.string.info_handle);
@@ -86,13 +65,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-/*        //Set button image
-        if(isRunning) {
-            startStop.setBackground(getResources().getDrawable(R.drawable.power_on));
-        } else {
-            startStop.setBackground(getResources().getDrawable(R.drawable.power_off));
-        }*/
 
         Button gotoEvidence = (Button) findViewById(R.id.gotoEvidence);
         gotoEvidence.setOnClickListener(new View.OnClickListener() {

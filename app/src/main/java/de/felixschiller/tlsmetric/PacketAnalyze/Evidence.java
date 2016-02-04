@@ -44,6 +44,7 @@ public class Evidence {
     public static HashMap<Integer, PackageInformation> mPacketInfoMap;
     public static HashMap<Integer, Integer> mPortPidMap = new HashMap<>();
     public static HashMap<Integer, Integer> mUidPidMap = new HashMap<>();
+    public static int newWarnings;
 
     public Evidence(){
         mEvidence = new ArrayList<>();
@@ -53,7 +54,7 @@ public class Evidence {
         mPacketInfoMap = new HashMap<>();
         updatePortPidMap();
         updateConnections();
-
+        newWarnings = 0;
     }
 
     public void updateConnections(){
