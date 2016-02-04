@@ -70,7 +70,7 @@ public class EvidenceActivity extends AppCompatActivity{
                         .withEndAction(new Runnable() {
                             @Override
                             public void run() {
-                                if (ann.filter.severity != 4) {
+                                if (ann.filter.severity != -1) {
                                     EvidenceAdapter newAdapter = new EvidenceAdapter(getApplicationContext(), Evidence.mEvidenceDetail.get(ann.srcPort));
                                     listview.setAdapter(newAdapter);
                                 } else {
@@ -134,7 +134,7 @@ public class EvidenceActivity extends AppCompatActivity{
             } else if (severity == 1) {
                 imageStatusView.setImageResource(R.drawable.icon_warn_036);
                 imageStatusView.setBackgroundColor(Color.YELLOW);
-            }else if (severity == 4) {
+            }else if (severity == -1) {
                 imageStatusView.setImageResource(R.drawable.icon_ok_036);
                 imageStatusView.setBackgroundColor(Color.GRAY);
             } else if (severity == 0){

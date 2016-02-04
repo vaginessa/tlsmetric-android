@@ -66,7 +66,7 @@ public class Evidence {
             }
         for (int port: ports) {
             Announcement ann = new Announcement();
-            ann.filter = new Empty(Filter.Protocol.UNKNOWN,4,"No connection data.");
+            ann.filter = new Empty(Filter.Protocol.UNKNOWN,-1,"No connection data.");
             ann.srcPort = port;
             fillAppData(ann);
             ann.url = "unknown";
@@ -320,6 +320,30 @@ public class Evidence {
             return generateDummy();
         }
 
+    }
+
+    //Just a BubbleSort - order ArrayList<Announcement> in place by by severity, DESC
+    private static void sortAnnList(ArrayList<Announcement> annList){
+        int range = annList.size() - 1;
+        while(range > 1){
+            for(int i = 0; i < range; i ++){
+                if(annList.get(i).filter.severity < annList.get(i + 1).filter.severity){
+                    Announcement tmpAnn = annList.get(i);
+                    annList.add(i, annList.get(i + 1));
+                    annList.add(i+1 ,tmpAnn);
+                }
+            }
+            range --;
+        }
+    }
+
+public static ArrayList<Announcement> getSortedEvidence(){
+    sortAnnList(mEvidence);
+    return mEvidence;
+}
+    public static ArrayList<Announcement> getSortedEvidenceDetail(int key){
+        sortAnnList(mEvidenceDetail.get(key));
+        return mEvidenceDetail.get(key);
     }
 
     private static PackageInformation generateDummy() {
