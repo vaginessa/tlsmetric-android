@@ -21,12 +21,12 @@ import de.felixschiller.tlsmetric.VpnDump.VpnBypassService;
 
 public class MainActivity extends AppCompatActivity {
 
+    private boolean isRunning;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
 
         //Fill the Singleton
         ContextSingleton.setContext(this);
@@ -54,12 +54,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 */
+
+        isRunning = ToolBox.isAnalyzerServiceRunning();
+
         final Button startStop = (Button) findViewById(R.id.startStop);
         startStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 TextView infoText = (TextView) findViewById(R.id.infoText);
-                if(!ToolBox.isAnalyzerServiceRunning()) {
+                if(!isRunning) {
+                    isRunning = true;
                     infoText.setText(R.string.info_starting);
                     if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "begin start sequence.");
                     startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
@@ -68,8 +72,10 @@ public class MainActivity extends AppCompatActivity {
                     DumpHandler.startAnalyzerService();
                     infoText.setText(R.string.info_running);
                     startStop.setBackground(getResources().getDrawable(R.drawable.power_on));
+
                     minimizeActivity();
                 } else {
+                    isRunning = false;
                     if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "begin stop sequence.");
                     infoText.setText(R.string.info_stopping);
                     startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
@@ -81,18 +87,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        //Set button image
-        if(ToolBox.isAnalyzerServiceRunning()) {
+/*        //Set button image
+        if(isRunning) {
             startStop.setBackground(getResources().getDrawable(R.drawable.power_on));
         } else {
             startStop.setBackground(getResources().getDrawable(R.drawable.power_off));
-        }
+        }*/
 
         Button gotoEvidence = (Button) findViewById(R.id.gotoEvidence);
         gotoEvidence.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(ToolBox.isAnalyzerServiceRunning()){
+                if(isRunning){
                     Intent intent = new Intent(ContextSingleton.getContext(), EvidenceActivity.class);
                     startActivity(intent);
                 } else {

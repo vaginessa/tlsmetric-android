@@ -160,14 +160,28 @@ public class EvidenceActivity extends AppCompatActivity{
                 return true;
 
             case R.id.action_back:
-                Intent intent = new Intent(ContextSingleton.getContext(), MainActivity.class);
-                startActivity(intent);
+                if(onDetailPage){
+                    ListView listview = (ListView) findViewById(android.R.id.list);
+                    EvidenceAdapter adapter = new EvidenceAdapter(ContextSingleton.getContext(), Evidence.mEvidence);
+                    listview.setAdapter(adapter);
+                    adapter.notifyDataSetChanged();
+                    onDetailPage = false;
+                } else{
+                    Intent intent = new Intent(ContextSingleton.getContext(), MainActivity.class);
+                    startActivity(intent);
+                }
+
                 return true;
 
             case R.id.action_refresh:
                 Evidence.disposeInactiveEvidence();
+
+                if(onDetailPage){
+                    onDetailPage = false;
+                }
                 ListView listview = (ListView) findViewById(android.R.id.list);
-                EvidenceAdapter adapter = (EvidenceAdapter)listview.getAdapter();
+                EvidenceAdapter adapter = new EvidenceAdapter(ContextSingleton.getContext(), Evidence.mEvidence);
+                listview.setAdapter(adapter);
                 adapter.notifyDataSetChanged();
                 return true;
 

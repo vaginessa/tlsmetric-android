@@ -8,7 +8,7 @@
     android:title="@string/action_back"
     app:showAsAction="ifRoom"/>
 
-    <!-- Back button -->
+    <!-- Refresh button -->
     <item
         android:id="@+id/action_refresh"
         android:icon="@android:drawable/ic_menu_rotate"
