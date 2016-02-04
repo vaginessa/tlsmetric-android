@@ -123,20 +123,15 @@ public class EvidenceActivity extends AppCompatActivity{
             ImageView imageStatusView = (ImageView) rowView.findViewById(R.id.statusIcon);
             int severity = anns[position].filter.severity;
             if(severity == 3){
-                imageStatusView.setImageResource(R.drawable.icon_warn);
-                imageStatusView.setBackgroundColor(Color.RED);
+                imageStatusView.setImageResource(R.drawable.icon_warn_red);
             } else if (severity == 2){
-                imageStatusView.setImageResource(R.drawable.icon_warn);
-                imageStatusView.setBackgroundColor(Color.YELLOW);
+                imageStatusView.setImageResource(R.drawable.icon_warn_yell);
             } else if (severity == 1) {
-                imageStatusView.setImageResource(R.drawable.icon_warn);
-                imageStatusView.setBackgroundColor(Color.YELLOW);
+                imageStatusView.setImageResource(R.drawable.icon_warn_yell);
             } else if (severity == 0){
                 imageStatusView.setImageResource(R.drawable.icon_ok);
-                imageStatusView.setBackgroundColor(Color.GREEN);
             } else if (severity == -1) {
                 imageStatusView.setImageResource(R.drawable.icon_quest);
-                imageStatusView.setBackgroundColor(Color.GRAY);
             }
 
             //Status Text
