@@ -225,6 +225,16 @@ public class Evidence {
         }
     }
 
+    public static void disposeInactiveEvidence(){
+        HashMap<Integer, Integer> ports = getPortMap();
+        for (int i = 0; i < mEvidence.size(); i++){
+            if(!ports.containsKey(mEvidence.get(i).srcPort)){
+                mEvidenceDetail.remove(mEvidence.get(i).srcPort);
+                mEvidence.remove(i);
+            }
+        }
+    }
+
     private static int getPidByPort(int port) {
         if(!mPortPidMap.containsKey(port)){
             updatePortPidMap();
@@ -330,7 +340,7 @@ public class Evidence {
                 if(annList.get(i).filter.severity < annList.get(i + 1).filter.severity){
                     Announcement tmpAnn = annList.get(i);
                     annList.set(i, annList.get(i + 1));
-                    annList.set(i+1 ,tmpAnn);
+                    annList.set(i + 1, tmpAnn);
                 }
             }
             range --;
@@ -348,7 +358,7 @@ public static ArrayList<Announcement> getSortedEvidence(){
 
     private static PackageInformation generateDummy() {
         PackageInformation pi = new PackageInformation();
-        pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.mipmap.icon);
+        pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.drawable.icon);
         pi.packageName = "Unknown App";
         return pi;
     }

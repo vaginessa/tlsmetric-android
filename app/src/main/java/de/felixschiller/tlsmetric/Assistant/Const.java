@@ -21,4 +21,5 @@ public interface Const {
     String FILE_FILTER = "filter.ini";
     String PARAMS = "-w";
     Object FILE_RESOLVE_PID = "resolve";
+    int ANNOUNCEMENT_TIMEOUT = 1;
 }

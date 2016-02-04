@@ -33,12 +33,13 @@ import de.felixschiller.tlsmetric.PacketAnalyze.PackageInformation;
 import de.felixschiller.tlsmetric.R;
 
 public class EvidenceActivity extends AppCompatActivity{
-
+    private boolean onDetailPage;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_evidence);
         ContextSingleton.setContext(this);
+        onDetailPage = false;
 
         //Toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.evidence_toolbar);
@@ -69,6 +70,7 @@ public class EvidenceActivity extends AppCompatActivity{
                             @Override
                             public void run() {
                                 if (ann.filter.severity != -1) {
+                                    onDetailPage = true;
                                     EvidenceAdapter newAdapter = new EvidenceAdapter(getApplicationContext(), Evidence.getSortedEvidenceDetail(ann.srcPort));
                                     listview.setAdapter(newAdapter);
                                 } else {
@@ -163,6 +165,7 @@ public class EvidenceActivity extends AppCompatActivity{
                 return true;
 
             case R.id.action_refresh:
+                Evidence.disposeInactiveEvidence();
                 ListView listview = (ListView) findViewById(android.R.id.list);
                 EvidenceAdapter adapter = (EvidenceAdapter)listview.getAdapter();
                 adapter.notifyDataSetChanged();
