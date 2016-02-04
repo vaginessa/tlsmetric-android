@@ -43,7 +43,7 @@ public class EvidenceActivity extends AppCompatActivity{
         //Toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.evidence_toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setLogo(R.drawable.icon_36);
+        toolbar.setLogo(R.drawable.icon);
         toolbar.setLogoDescription(R.string.app_name);
 
         //EvidenceList
