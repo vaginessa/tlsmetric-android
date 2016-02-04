@@ -3,6 +3,7 @@ package de.felixschiller.tlsmetric.Activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -10,6 +11,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.Assistant.ToolBox;
 import de.felixschiller.tlsmetric.R;
@@ -59,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
                 TextView infoText = (TextView) findViewById(R.id.infoText);
                 if(!ToolBox.isAnalyzerServiceRunning()) {
                     infoText.setText(R.string.info_starting);
+                    if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "begin start sequence.");
                     startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
                     DumpHandler.start();
                     infoText.setText(R.string.info_waiting);
@@ -67,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
                     startStop.setBackground(getResources().getDrawable(R.drawable.power_on));
                     minimizeActivity();
                 } else {
+                    if(Const.IS_DEBUG) Log.d(Const.LOG_TAG, "begin stop sequence.");
                     infoText.setText(R.string.info_stopping);
                     startStop.setBackground(getResources().getDrawable(R.drawable.power_working));
                     DumpHandler.stopAnalyzerService();

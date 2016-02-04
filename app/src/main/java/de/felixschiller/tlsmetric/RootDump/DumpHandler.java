@@ -126,6 +126,7 @@ public class DumpHandler {
     }
 
     public static void stopAnalyzerService(){
+        if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Set AnalyzerService interrupt.");
         AnalyzerService.mInterrupt = true;
     }
 

@@ -329,8 +329,8 @@ public class Evidence {
             for(int i = 0; i < range; i ++){
                 if(annList.get(i).filter.severity < annList.get(i + 1).filter.severity){
                     Announcement tmpAnn = annList.get(i);
-                    annList.add(i, annList.get(i + 1));
-                    annList.add(i+1 ,tmpAnn);
+                    annList.set(i, annList.get(i + 1));
+                    annList.set(i+1 ,tmpAnn);
                 }
             }
             range --;
