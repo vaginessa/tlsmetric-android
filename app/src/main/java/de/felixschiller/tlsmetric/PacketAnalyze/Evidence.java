@@ -10,7 +10,6 @@ import com.voytechs.jnetstream.codec.Packet;
 import com.voytechs.jnetstream.primitive.address.Address;
 
 
-import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.BufferOverflowException;
@@ -28,7 +27,6 @@ import de.felixschiller.tlsmetric.Assistant.ExecuteCommand;
 import de.felixschiller.tlsmetric.Assistant.ToolBox;
 import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Empty;
 import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Filter;
-import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Identifyer;
 import de.felixschiller.tlsmetric.R;
 
 /**
@@ -36,21 +34,20 @@ import de.felixschiller.tlsmetric.R;
  * detected by the filters.
  */
 public class Evidence {
-
+    //public Members
     public static ArrayList<Announcement> mEvidence;
     public static HashMap<Integer, ArrayList<Announcement>> mEvidenceDetail;
-    public static boolean newData;
-    public static File mResolveFile;
     public static HashMap<Integer, PackageInformation> mPacketInfoMap;
-    public static HashMap<Integer, Integer> mPortPidMap = new HashMap<>();
-    public static HashMap<Integer, Integer> mUidPidMap = new HashMap<>();
     public static int newWarnings;
+
+    //private Members
+    private static HashMap<Integer, Integer> mPortPidMap = new HashMap<>();
+    private static HashMap<Integer, Integer> mUidPidMap = new HashMap<>();
+
 
     public Evidence(){
         mEvidence = new ArrayList<>();
         mEvidenceDetail = new HashMap<>();
-        newData = false;
-        mResolveFile =  new File(ContextSingleton.getContext().getFilesDir() + File.separator + Const.FILE_RESOLVE_PID);
         mPacketInfoMap = new HashMap<>();
         updatePortPidMap();
         updateConnections();
@@ -75,12 +72,15 @@ public class Evidence {
         }
    }
 
-    public void processPacket(Packet pkt) {
+    public boolean processPacket(Packet pkt) {
         Filter filter = scanPacket(pkt);
         if (filter != null) {
             if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Filter triggered: " + filter.protocol);
             Announcement ann = generateAnnouncement(pkt, filter);
             addEvidenceEntry(ann);
+            return true;
+        } else {
+            return false;
         }
 
     }
@@ -89,12 +89,15 @@ public class Evidence {
 
         boolean updated = false;
 
-        //Check and update existing connections with lesser filter severity or unknown connection (4)
+        //Check and update existing connections with lesser filter severity (unknown (-1) or ok (0))
         for(int i =0; i< mEvidence.size(); i++){
             if(mEvidence.get(i).srcPort == ann.srcPort){
                 updated = true;
-                if(mEvidence.get(i).filter.severity < ann.filter.severity || mEvidence.get(i).filter.severity == 4){
+                if(mEvidence.get(i).filter.severity < ann.filter.severity){
+                    if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Replacing connection to " + ann.url + " in evidence list. Higher warning state.");
                     mEvidence.set(i, ann);
+                    //Set notification count +1
+                    if(ann.filter.severity > 0){ newWarnings++;}
                 }
             }
         }
@@ -103,11 +106,23 @@ public class Evidence {
         if(!updated){
             if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Adding connection " + ann.url + "to evidence list.");
             mEvidence.add(ann);
+            //Set notification count +1
+            if(ann.filter.severity > 0){ newWarnings++;}
         }
 
-        //Add all found filters to the detail list
+        //Add found filters to detail list, if triggered filter not already exist.
         if(mEvidenceDetail.containsKey(ann.srcPort)){
-            mEvidenceDetail.get(ann.srcPort).add(ann);
+            ArrayList<Announcement> detailList = mEvidenceDetail.get(ann.srcPort);
+            boolean hasFilter = false;
+            for(Announcement exAnn : detailList){
+                if(exAnn.filter.getClass() == ann.filter.getClass()){
+                    exAnn.touch();
+                    hasFilter = true;
+                }
+            }
+            if(!hasFilter){
+                detailList.add(ann);
+            }
         } else {
             ArrayList<Announcement> newList = new ArrayList<>();
             newList.add(ann);
@@ -364,6 +379,15 @@ public static ArrayList<Announcement> getSortedEvidence(){
         return pi;
     }
 
+    public static int getMaxSeverity(){
+        int severity = -1;
+        for(Announcement ann : mEvidence){
+            if(ann.filter.severity > severity){
+                severity = ann.filter.severity;
+            }
+        }
+        return severity;
+    }
     /*    public static HashMap<Integer, Integer> generatePortPidMap(){
         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Generating Port-to-Pid Map.");
         HashMap<Integer, Integer> portPidMap = new HashMap<>();

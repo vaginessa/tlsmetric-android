@@ -23,4 +23,8 @@ public class Announcement {
 
     public Filter filter;
 
+    public void touch(){
+        timestamp = new Timestamp(System.currentTimeMillis());
+    }
+
 }
