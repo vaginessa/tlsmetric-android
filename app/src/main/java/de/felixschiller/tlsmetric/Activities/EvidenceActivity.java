@@ -41,7 +41,7 @@ public class EvidenceActivity extends AppCompatActivity{
         //Toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.evidence_toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setLogo(R.mipmap.icon);
+        //toolbar.setLogo(R.mipmap.icon);
         toolbar.setLogoDescription(R.string.app_name);
 
 
@@ -106,6 +106,8 @@ public class EvidenceActivity extends AppCompatActivity{
                 Evidence.updateConnections();
                 ListView listview = (ListView) findViewById(android.R.id.list);
                 EvidenceAdapter adapter = (EvidenceAdapter)listview.getAdapter();
+                int size = Evidence.mEvidence.size();
+                adapter.anns = copyArrayList(Evidence.getSortedEvidence()).toArray(new Announcement[size]);
                 adapter.notifyDataSetChanged();
                 return true;
 
@@ -116,7 +118,7 @@ public class EvidenceActivity extends AppCompatActivity{
 
     private class EvidenceAdapter extends ArrayAdapter<Announcement> {
 
-        private final Announcement[] anns;
+        private Announcement[] anns;
         private final Context context;
 
         public EvidenceAdapter(Context context, ArrayList<Announcement> AnnList) {

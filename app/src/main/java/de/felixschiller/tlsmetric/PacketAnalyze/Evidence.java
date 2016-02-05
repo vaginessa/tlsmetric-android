@@ -167,6 +167,7 @@ public class Evidence {
     public static Announcement generateAnnouncement(Packet pkt, Filter filter) {
         Announcement ann = new Announcement();
         ann.filter = filter;
+        ann.touch();
         fillConnectionData(ann, pkt);
         ann.pid = getPidByPort(ann.srcPort);
         updatePackageInformationData(ann.pid);
