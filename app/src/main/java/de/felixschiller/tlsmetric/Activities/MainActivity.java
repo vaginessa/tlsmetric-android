@@ -80,7 +80,16 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+
+        if(isRunning){
+            startStop.setBackground(getResources().getDrawable(R.drawable.power_on));
+        } else {
+            startStop.setBackground(getResources().getDrawable(R.drawable.power_off));
+        }
     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

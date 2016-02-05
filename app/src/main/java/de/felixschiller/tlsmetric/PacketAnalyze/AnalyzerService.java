@@ -51,7 +51,7 @@ public class AnalyzerService extends Service {
     private int mNotificationCount;
     NotificationCompat.Builder mBuilder =
             new NotificationCompat.Builder(this)
-                    .setSmallIcon(R.drawable.icon)
+                    .setSmallIcon(R.mipmap.icon)
                     .setContentTitle("TLSMetric")
                     .setContentText("Packet analyzer service is running.");
 
@@ -81,13 +81,10 @@ public class AnalyzerService extends Service {
     }
 
     private void loadNotificationBitmaps() {
-        BitmapFactory.Options mBitmapOptions = new BitmapFactory.Options();
-        mBitmapOptions.outWidth = 32;
-        mBitmapOptions.outHeight = 32;
-        //mQuest = BitmapFactory.decodeResource(getResources(), R.drawable.icon_quest, mBitmapOptions);
-        mOk = BitmapFactory.decodeResource(getResources(), R.drawable.icon_ok, mBitmapOptions);
-        mWarnOrange = BitmapFactory.decodeResource(getResources(), R.drawable.icon_warn_orange, mBitmapOptions);
-        mWarnRed = BitmapFactory.decodeResource(getResources(), R.drawable.icon_warn_red, mBitmapOptions);
+        //mQuest = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_quest, mBitmapOptions);
+        mOk = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_ok);
+        mWarnOrange = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_warn_orange);
+        mWarnRed = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_warn_red);
 
 
     }
@@ -210,7 +207,7 @@ public class AnalyzerService extends Service {
         }
     }
     private void showAppNotification(){
-        mBuilder.setSmallIcon(R.drawable.icon);
+        mBuilder.setSmallIcon(R.mipmap.icon);
         mBuilder.setLargeIcon(mOk);
         // Creates an explicit intent for an Activity in your app
         Intent resultIntent = new Intent(this, MainActivity.class);
@@ -239,10 +236,10 @@ public class AnalyzerService extends Service {
     private void showWarningNotification(){
         //Set corresponding icon
         if(Evidence.getMaxSeverity() > 2){
-            mBuilder.setSmallIcon(R.drawable.icon_warn_red);
+            mBuilder.setSmallIcon(R.mipmap.icon_warn_red);
             mBuilder.setLargeIcon(mWarnRed);
         } else {
-            mBuilder.setSmallIcon(R.drawable.icon_warn_orange);
+            mBuilder.setSmallIcon(R.mipmap.icon_warn_orange);
             mBuilder.setLargeIcon(mWarnOrange);
         }
         mBuilder.setContentText(mNotificationCount + " new warnings encountered.");

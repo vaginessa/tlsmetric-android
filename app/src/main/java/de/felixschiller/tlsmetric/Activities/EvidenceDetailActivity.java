@@ -28,15 +28,13 @@ import de.felixschiller.tlsmetric.PacketAnalyze.Evidence;
 import de.felixschiller.tlsmetric.PacketAnalyze.PackageInformation;
 import de.felixschiller.tlsmetric.R;
 
-public class EvidenceActivity extends AppCompatActivity{
-
+public class EvidenceDetailActivity extends AppCompatActivity{
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_evidence);
         ContextSingleton.setContext(this);
-        Evidence.newWarnings = 0;
 
         //Toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.evidence_toolbar);
@@ -48,38 +46,16 @@ public class EvidenceActivity extends AppCompatActivity{
         //EvidenceList
         final ListView listview = (ListView) findViewById(android.R.id.list);
 
-        final EvidenceAdapter adapter;
+        final DetailAdapter adapter;
         if(Evidence.mEvidence != null){
-            adapter = new EvidenceAdapter(this, copyArrayList(Evidence.getSortedEvidence()));
+            adapter = new DetailAdapter(this, copyArrayList(Evidence.mEvidenceDetail));
         } else {
             if(Const.IS_DEBUG) Log.e(Const.LOG_TAG, "Evidence list not existing or empty!");
-            adapter = new EvidenceAdapter(this, new ArrayList<Announcement>());
+            adapter = new DetailAdapter(this, new ArrayList<Announcement>());
+            Toast.makeText(EvidenceDetailActivity.this, "No connections availiable.", Toast.LENGTH_SHORT).show();
         }
 
         listview.setAdapter(adapter);
-
-        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, final View view,
-                                    int position, long id) {
-                final Announcement ann = (Announcement) parent.getItemAtPosition(position);
-                view.animate().setDuration(500).alpha((float)0.5)
-                        .withEndAction(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (ann.filter.severity != -1) {
-                                    Evidence.setSortedEvidenceDetail(ann.srcPort);
-                                    Intent intent = new Intent(ContextSingleton.getContext(), EvidenceDetailActivity.class);
-                                    startActivity(intent);
-                                } else {
-                                    Toast toast = Toast.makeText(ContextSingleton.getContext(), "No detail availiable for this connection", Toast.LENGTH_LONG);
-                                    toast.show();
-                                }
-                            }
-                        });
-            }
-
-        });
     }
 
     @Override
@@ -97,15 +73,15 @@ public class EvidenceActivity extends AppCompatActivity{
                 return true;
 
             case R.id.action_back:
-                Intent intent = new Intent(ContextSingleton.getContext(), MainActivity.class);
-                startActivity(intent);
+                    Intent intent = new Intent(ContextSingleton.getContext(), EvidenceActivity.class);
+                    startActivity(intent);
                 return true;
 
             case R.id.action_refresh:
                 Evidence.disposeInactiveEvidence();
                 Evidence.updateConnections();
                 ListView listview = (ListView) findViewById(android.R.id.list);
-                EvidenceAdapter adapter = (EvidenceAdapter)listview.getAdapter();
+                DetailAdapter adapter = (DetailAdapter)listview.getAdapter();
                 adapter.notifyDataSetChanged();
                 return true;
 
@@ -114,13 +90,15 @@ public class EvidenceActivity extends AppCompatActivity{
         }
     }
 
-    private class EvidenceAdapter extends ArrayAdapter<Announcement> {
+
+
+    private class DetailAdapter extends ArrayAdapter<Announcement> {
 
         private final Announcement[] anns;
         private final Context context;
 
-        public EvidenceAdapter(Context context, ArrayList<Announcement> AnnList) {
-            super(context, R.layout.evidence_list_entry, AnnList);
+        public DetailAdapter(Context context, ArrayList<Announcement> AnnList) {
+            super(context, R.layout.evidence_detail_entry, AnnList);
             this.context = context;
             this.anns = new Announcement[AnnList.size()];
             for(int i = 0; i < AnnList.size(); i++){
@@ -133,14 +111,7 @@ public class EvidenceActivity extends AppCompatActivity{
             LayoutInflater inflater = (LayoutInflater) context
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-            View rowView = inflater.inflate(R.layout.evidence_list_entry, parent, false);
-
-            //if unknown app (-1) try again to get pid by sourcePort;
-            if(anns[position].pid == -1){
-                anns[position].pid = Evidence.getPidByPort(anns[position].srcPort);
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Rescan of pid. srcPort: " +
-                        anns[position].srcPort + " new pid: " + anns[position].pid);
-            }
+            View rowView = inflater.inflate(R.layout.evidence_detail_entry, parent, false);
 
             PackageInformation pi = Evidence.getPackageInformation(anns[position].pid);
             //First Line Text
@@ -148,10 +119,10 @@ public class EvidenceActivity extends AppCompatActivity{
             String first = pi.packageName;
             firstLine.setText(first);
 
-            //second Line Text
-            TextView secondLine = (TextView) rowView.findViewById(R.id.secondLine);
-            String second = "Host: " + anns[position].url;
-            secondLine.setText(second);
+            //Detail Text Field
+            TextView detail = (TextView) rowView.findViewById(R.id.detail);
+            String detailText = generateDetail(anns[position]);
+            detail.setText(detailText);
 
             //App icon
             ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
@@ -172,15 +143,10 @@ public class EvidenceActivity extends AppCompatActivity{
                 imageStatusView.setImageResource(R.mipmap.icon_quest);
             }
 
-            //Status Text
-            TextView statusLine = (TextView) rowView.findViewById(R.id.statusLine);
-            String status = "Level :" + severity;
-            statusLine.setText(status);
             return rowView;
         }
 
     }
-
 
     private String generateDetail(Announcement ann) {
         String detail = ann.filter.description;
@@ -188,14 +154,19 @@ public class EvidenceActivity extends AppCompatActivity{
         switch (ann.filter.severity){
             case -1:
                 detail += " - connection information.";
+                break;
             case 0:
                 detail += " - secure connection.";
+                break;
             case 1:
                 detail += " - minor warning.";
+                break;
             case 2:
                 detail += " - major warning.";
+                break;
             case 3:
                 detail += " - unencrypted connection.";
+                break;
             default:
                 break;
         }

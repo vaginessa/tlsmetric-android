@@ -22,7 +22,7 @@ public class Identifyer {
 
 
     final static byte[] sHTTP = new byte[]{(byte) 0x48, (byte) 0x54, (byte) 0x54, (byte) 0x50};
-    final static byte[] sTLS03 = new byte[]{(byte) 0x03, (byte) 0x00};
+    final static byte[] sSSL3 = new byte[]{(byte) 0x03, (byte) 0x00};
     final static byte[] sTLS10 = new byte[]{(byte) 0x03, (byte) 0x01};
     final static byte[] sTLS11 = new byte[]{(byte) 0x03, (byte) 0x01};
     final static byte[] sTLS12 = new byte[]{(byte) 0x03, (byte) 0x03};
@@ -31,11 +31,10 @@ public class Identifyer {
     public static Filter indent(byte[] ident) {
         Filter filter = null;
 
-        if (searchByteArray(ident, sHTTP) == 0) filter = new Http(Filter.Protocol.HTTP, 3,
-                ContextSingleton.getContext().getResources().getString(R.string.ALERT_HTTP));
-        else if (searchByteArray(ident, sTLS03) == 1 && fillSubProto(ident) != null)
-            filter = new Tls(Filter.Protocol.SSL3, 0,
-                    ContextSingleton.getContext().getResources().getString(R.string.ALERT_TLS_03),
+        if (searchByteArray(ident, sHTTP) == 0) filter = new Http(Filter.Protocol.HTTP, 3, ContextSingleton.getContext().getResources().getString(R.string.ALERT_HTTP));
+        else if (searchByteArray(ident, sSSL3) == 1 && fillSubProto(ident) != null)
+            filter = new Tls(Filter.Protocol.SSL3, 1,
+                    ContextSingleton.getContext().getResources().getString(R.string.ALERT_SSL_3),
                     fillSubProto(ident), 10);
         else if (searchByteArray(ident, sTLS10) == 1 && fillSubProto(ident) != null)
             filter = new Tls(Filter.Protocol.TLS10, 0,
