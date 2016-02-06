@@ -113,7 +113,7 @@ public class EvidenceDetailActivity extends AppCompatActivity{
 
             View rowView = inflater.inflate(R.layout.evidence_detail_entry, parent, false);
 
-            PackageInformation pi = Evidence.getPackageInformation(anns[position].pid);
+            PackageInformation pi = Evidence.getPackageInformation(anns[position].pid, anns[position].uid);
             //First Line Text
             TextView firstLine = (TextView) rowView.findViewById(R.id.firstLine);
             String first = pi.packageName;
@@ -179,7 +179,12 @@ public class EvidenceDetailActivity extends AppCompatActivity{
         if(ann.pid == -1){
             detail += " \n App process ID: UNKNOWN";
         } else {
-            detail += " \n App process ID: " + ann.pid;
+            detail += " \n App process ID (PID) : " + ann.pid;
+        }
+        if(ann.uid == -1){
+            detail += " \n App user ID (UID) : UNKNOWN";
+        } else {
+            detail += " \n App process ID: " + ann.uid;
         }
         return detail;
     }

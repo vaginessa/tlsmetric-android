@@ -20,8 +20,10 @@ public class Announcement {
     public Timestamp timestamp;
 
     public int pid;
+    public int uid;
 
     public Filter filter;
+
 
     public void touch(){
         timestamp = new Timestamp(System.currentTimeMillis());

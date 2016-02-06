@@ -105,9 +105,9 @@ public class EvidenceActivity extends AppCompatActivity{
                 Evidence.disposeInactiveEvidence();
                 Evidence.updateConnections();
                 ListView listview = (ListView) findViewById(android.R.id.list);
-                EvidenceAdapter adapter = (EvidenceAdapter)listview.getAdapter();
-                int size = Evidence.mEvidence.size();
-                adapter.anns = copyArrayList(Evidence.getSortedEvidence()).toArray(new Announcement[size]);
+                EvidenceAdapter adapter = new EvidenceAdapter(ContextSingleton.getContext(),
+                        copyArrayList(Evidence.getSortedEvidence()));
+                listview.setAdapter(adapter);
                 adapter.notifyDataSetChanged();
                 return true;
 
@@ -138,13 +138,16 @@ public class EvidenceActivity extends AppCompatActivity{
             View rowView = inflater.inflate(R.layout.evidence_list_entry, parent, false);
 
             //if unknown app (-1) try again to get pid by sourcePort;
-            if(anns[position].pid == -1){
-                anns[position].pid = Evidence.getPidByPort(anns[position].srcPort);
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Rescan of pid. srcPort: " +
-                        anns[position].srcPort + " new pid: " + anns[position].pid);
+            Announcement ann = anns[position];
+            if(ann.pid == -1 && ann.uid == -1){
+                ann.pid = Evidence.getPidByPort(ann.srcPort);
+                ann.uid = Evidence.getUidByPort(ann.srcPort);
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Rescan of pid and uid. srcPort: " +
+                        ann.srcPort + " new pid: " + ann.pid
+                        + " new uid: " + ann.uid);
             }
 
-            PackageInformation pi = Evidence.getPackageInformation(anns[position].pid);
+            PackageInformation pi = Evidence.getPackageInformation(ann.pid, ann.uid);
             //First Line Text
             TextView firstLine = (TextView) rowView.findViewById(R.id.firstLine);
             String first = pi.packageName;
@@ -152,7 +155,7 @@ public class EvidenceActivity extends AppCompatActivity{
 
             //second Line Text
             TextView secondLine = (TextView) rowView.findViewById(R.id.secondLine);
-            String second = "Host: " + anns[position].url;
+            String second = "Host: " + ann.url;
             secondLine.setText(second);
 
             //App icon
@@ -161,7 +164,7 @@ public class EvidenceActivity extends AppCompatActivity{
 
             //Status icon
             ImageView imageStatusView = (ImageView) rowView.findViewById(R.id.statusIcon);
-            int severity = anns[position].filter.severity;
+            int severity = ann.filter.severity;
             if(severity == 3){
                 imageStatusView.setImageResource(R.mipmap.icon_warn_red);
             } else if (severity == 2){
@@ -181,38 +184,6 @@ public class EvidenceActivity extends AppCompatActivity{
             return rowView;
         }
 
-    }
-
-
-    private String generateDetail(Announcement ann) {
-        String detail = ann.filter.description;
-        detail += " \n Severity: " + ann.filter.severity ;
-        switch (ann.filter.severity){
-            case -1:
-                detail += " - connection information.";
-            case 0:
-                detail += " - secure connection.";
-            case 1:
-                detail += " - minor warning.";
-            case 2:
-                detail += " - major warning.";
-            case 3:
-                detail += " - unencrypted connection.";
-            default:
-                break;
-        }
-        detail += " \n Protocol: " + ann.filter.protocol;
-        detail += " \n Time: " + ann.timestamp.toString();
-        detail += " \n Target Host IP: " + ann.dstAddr.getHostAddress();
-        detail += " \n Target Hostname: " + ann.dstAddr.getHostName();
-        detail += " \n Source Port: " + ann.srcPort;
-        detail += " \n Destination Port: " + ann.srcPort;
-        if(ann.pid == -1){
-            detail += " \n App process ID: UNKNOWN";
-        } else {
-            detail += " \n App process ID: " + ann.pid;
-        }
-        return detail;
     }
 
     @Override

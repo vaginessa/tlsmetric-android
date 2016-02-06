@@ -44,6 +44,7 @@ public class Evidence {
     //private Members
     private static HashMap<Integer, Integer> mPortPidMap = new HashMap<>();
     private static HashMap<Integer, Integer> mUidPidMap = new HashMap<>();
+    private static HashMap<Integer, Integer> mPortUidMap = new HashMap<>();
 
 
     public Evidence(){
@@ -68,9 +69,10 @@ public class Evidence {
         for (int port: ports) {
             Announcement ann = new Announcement();
             ann.filter = new Empty(Filter.Protocol.UNKNOWN,-1,"SrcPort: " + port + "No data.");
+            ann.touch();
             ann.srcPort = port;
             ann.pid = getPidByPort(port);
-            updatePackageInformationData(ann.pid);
+            updatePackageInformationData(ann.pid, ann.uid);
             //TODO: parse url from /proc/net/tcp
             ann.url = "unknown";
             addEvidenceEntry(ann);
@@ -169,8 +171,9 @@ public class Evidence {
         ann.filter = filter;
         ann.touch();
         fillConnectionData(ann, pkt);
+        ann.uid = getUidByPort(ann.srcPort);
         ann.pid = getPidByPort(ann.srcPort);
-        updatePackageInformationData(ann.pid);
+        updatePackageInformationData(ann.pid, ann.uid);
         return ann;
     }
 
@@ -196,14 +199,11 @@ public class Evidence {
         }
 
         if(ipHeader != null && transportHeader != null) {
-            InetAddress localAddress = ToolBox.getLocalAddress();
-
             try {
             //Get ports and addresses from header
             Address address = (Address)ipHeader.getValue("daddr");
             InetAddress remoteaddress = InetAddress.getByAddress(address.toByteArray());
-                if(localAddress != null &&
-                        !localAddress.getHostAddress().equals(remoteaddress.getHostAddress())){
+                if(getPortMap().containsKey((int) transportHeader.getValue("sport"))){
                     ann.dstAddr = remoteaddress;
                     ann.dstPort = (int) transportHeader.getValue("dport");
                     ann.srcPort = (int) transportHeader.getValue("sport");
@@ -224,25 +224,25 @@ public class Evidence {
      * Updates the PackageInformation hash map with new entries.
      * @param pid pid of the searched package
      */
-    private static void updatePackageInformationData(int pid) {
-
-
+    private static void updatePackageInformationData(int pid, int uid) {
         if (pid >= 0 && !mPacketInfoMap.containsKey(pid)){
             PackageManager pm = ContextSingleton.getContext().getPackageManager();
             ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
             PackageInformation pi = generateDummy();
             pi.pid = pid;
+            pi.uid = uid;
 
             List<ActivityManager.RunningAppProcessInfo> pids = am.getRunningAppProcesses();
             for (int i = 0; i < pids.size(); i++) {
                 ActivityManager.RunningAppProcessInfo info = pids.get(i);
-                if(info.pid == pid && !mPacketInfoMap.containsKey(pid)){
+                if((info.pid == pid || info.uid == uid )&& !mPacketInfoMap.containsKey(pid)){
                     try {
                         String[] list = info.pkgList;
                         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Processing packet information of: " + list[0]);
                         pi.packageName = list[0];
                         pi.icon = pm.getApplicationIcon(pi.packageName);
                         mPacketInfoMap.put(pid, pi);
+                        mPacketInfoMap.put(uid, pi);
                     } catch (PackageManager.NameNotFoundException e) {
                         if(Const.IS_DEBUG)Log.e(Const.LOG_TAG, "Icon and/or package name not found. Using TLSMetric icon for unknown app.");
                     }
@@ -253,9 +253,8 @@ public class Evidence {
     }
 
     public static void disposeInactiveEvidence(){
-        HashMap<Integer, Integer> ports = getPortMap();
         for (int i = 0; i < mEvidence.size(); i++){
-            if(!ports.containsKey(mEvidence.get(i).srcPort)){
+            if(!Evidence.mPortUidMap.containsKey(mEvidence.get(i).srcPort)){
                 mEvidenceDetailMap.remove(mEvidence.get(i).srcPort);
                 mEvidence.remove(i);
             }
@@ -276,20 +275,34 @@ public class Evidence {
         }
     }
 
-    private static void updatePortPidMap() {
-        updateUidPidMap();
-        HashMap<Integer, Integer> portUidMap = getPortMap();
-        Set<Integer> ports = portUidMap.keySet();
-        for (int port :ports){
-            if(!mPortPidMap.containsKey(port) && mUidPidMap.containsKey(portUidMap.get(port))){
-                mPortPidMap.put(port, mUidPidMap.get(portUidMap.get(port)));
-                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"mapping port to pid: " + port + " ->" + mUidPidMap.get(portUidMap.get(port)));
+    public static int getUidByPort(int port) {
+        if(!mPortUidMap.containsKey(port)){
+            updatePortUidMap();
+            if(mPortUidMap.containsKey(port)){
+                return mPortUidMap.get(port);
+            } else{
+                return -1;
             }
+        } else {
+            return mPortPidMap.get(port);
+
         }
     }
 
-
-
+    private static void updatePortUidMap(){
+        mPortUidMap = getPortMap();
+    }
+    private static void updatePortPidMap() {
+        updateUidPidMap();
+        updatePortUidMap();
+        Set<Integer> ports = mPortUidMap.keySet();
+        for (int port :ports){
+            if(!mPortPidMap.containsKey(port) && mUidPidMap.containsKey(mPortUidMap.get(port))){
+                mPortPidMap.put(port, mUidPidMap.get(mPortUidMap.get(port)));
+                if(Const.IS_DEBUG)Log.d(Const.LOG_TAG,"mapping port to pid: " + port + " ->" + mUidPidMap.get(mPortUidMap.get(port)));
+            }
+        }
+    }
 
     public static void updateUidPidMap(){
         ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
@@ -300,18 +313,6 @@ public class Evidence {
                 if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Adding uid/pid: " + info.uid + " -> " + info.pid);
             }
         }
-    }
-
-
-    public static int[] getPids() {
-        ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> pids = am.getRunningAppProcesses();
-        int[] pid = new int[pids.size()];
-        for (int i = 0; i < pids.size(); i++) {
-            ActivityManager.RunningAppProcessInfo info = pids.get(i);
-            pid[i] = info.pid;
-        }
-        return pid;
     }
 
     public static HashMap<Integer, Integer> getPortMap() {
@@ -350,15 +351,18 @@ public class Evidence {
         }
     }
 
-    public static PackageInformation getPackageInformation(int pid) {
+    public static PackageInformation getPackageInformation(int pid,int uid) {
         if(mPacketInfoMap.containsKey(pid)){
             return mPacketInfoMap.get(pid);
-        } else {
-            updatePackageInformationData(pid);
+        } else if(mPacketInfoMap.containsKey(uid)) {
+            return mPacketInfoMap.get(uid);
+        }else {
+            updatePackageInformationData(pid, uid);
             if(mPacketInfoMap.containsKey(pid)){
                 return mPacketInfoMap.get(pid);
-            } else {
-                updatePackageInformationData(pid);
+            } else if(mPacketInfoMap.containsKey(uid)) {
+                return mPacketInfoMap.get(uid);
+            }else {
                 return generateDummy();
             }
         }
@@ -394,6 +398,7 @@ public static ArrayList<Announcement> getSortedEvidence(){
         pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.mipmap.unknown_app);
         pi.packageName = "Unknown App";
         pi.pid = -1;
+        pi.uid = -1;
         return pi;
     }
 
