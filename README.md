@@ -1,11 +1,12 @@
 # README #
 
-TLSMetric is still pre-aplha and under development state.
+TLSMetric is still pre-alpha and under development state.
 
 TLSMetric is an app for evaluation of TLS-encryped communication on the device. The program blames other apps and server with no/weak encryption or bad certificate verification. Furthermore the communication behavior of installed apps should be revealed.
 
 -- Proof of Concept state -- 
 - This app is currently being developed as a "Proof of Concept" for my bachelor thesis and will developed further afterwards. 
+
 - SU rights on the Android-phone are currently required, a VPN capture functionality is in design.
 
 
