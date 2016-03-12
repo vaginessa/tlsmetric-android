@@ -1,6 +1,42 @@
-package de.felixschiller.tlsmetric.RootDump;
+/*
+    TLSMetric
+    - Copyright (2015, 2016) Felix Tsala Schiller
 
-import android.app.ActivityManager;
+    ###################################################################
+
+    This file is part of TLSMetric.
+
+    TLSMetric is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    TLSMetric is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with TLSMetric.  If not, see <http://www.gnu.org/licenses/>.
+
+    Diese Datei ist Teil von TLSMetric.
+
+    TLSMetric ist Freie Software: Sie können es unter den Bedingungen
+    der GNU General Public License, wie von der Free Software Foundation,
+    Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+    veröffentlichten Version, weiterverbreiten und/oder modifizieren.
+
+    TLSMetric wird in der Hoffnung, dass es nützlich sein wird, aber
+    OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite
+    Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+    Siehe die GNU General Public License für weitere Details.
+
+    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
+ */
+
+package de.felixschiller.tlsmetric.DumpHandler;
+
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
@@ -16,11 +52,11 @@ import java.io.OutputStream;
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.Assistant.ExecuteCommand;
-import de.felixschiller.tlsmetric.PacketAnalyze.AnalyzerService;
+import de.felixschiller.tlsmetric.PacketProcessing.AnalyserService;
 import de.felixschiller.tlsmetric.R;
 
 /**
- * Handel the execution of tcpdump binary (android port) and starts the analyzer service.
+ * Handel the execution (armabi port) of tcpdump binary, pcap files and and the analyzer service.
  */
 public class DumpHandler {
 
@@ -79,17 +115,20 @@ public class DumpHandler {
       [ expression ]
      */
 
+    //generate command parameters
     public static String generateCommand() {
         File bin = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_TCPDUMP);
         File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
         return bin.getAbsolutePath() + " " + Const.PARAMS + " " + file.getAbsolutePath() + " &";
     }
 
+    //remove the pcap file
     public static void deleteDumpFile(){
         File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
         deleteFile(file);
     }
 
+    //remove specific file
     private static void deleteFile(File file){
         try{
             if(file.delete()){
@@ -102,13 +141,14 @@ public class DumpHandler {
         }
     }
 
+    //start the service with tcpdump
     public static void startAnalyzerService(){
         File file = new File(ContextSingleton.getContext().getFilesDir(), Const.FILE_DUMP);
         for(int i = 0; i < 10; i++){
             if(file.exists()) {
                 if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Dump file present, edit permissions.");
                 ExecuteCommand.sudo("chmod 6755 " + file.getAbsolutePath());
-                Intent intent = new Intent(ContextSingleton.getContext(), AnalyzerService.class);
+                Intent intent = new Intent(ContextSingleton.getContext(), AnalyserService.class);
                 ContextSingleton.getActivity().startService(intent);
                 break;
             } else {
@@ -125,14 +165,16 @@ public class DumpHandler {
         }
     }
 
+    //Self-destruct sequence initiated. Please evacuate service immediately.
     public static void stopAnalyzerService(){
         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Set AnalyzerService interrupt.");
-        AnalyzerService.mInterrupt = true;
+        AnalyserService.mInterrupt = true;
     }
 
 
 
     //Checks for su rights
+    //TODO: depreached, replace with own method
     public void checkSu() {
         if (RootTools.isRootAvailable()) {
             Toast toast = Toast.makeText(ContextSingleton.getContext(), "Superuser is installed.", Toast.LENGTH_LONG);

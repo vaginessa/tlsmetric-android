@@ -1,4 +1,41 @@
-package de.felixschiller.tlsmetric.VpnDump;
+/*
+    TLSMetric
+    - Copyright (2015, 2016) Felix Tsala Schiller
+
+    ###################################################################
+
+    This file is part of TLSMetric.
+
+    TLSMetric is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    TLSMetric is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with TLSMetric.  If not, see <http://www.gnu.org/licenses/>.
+
+    Diese Datei ist Teil von TLSMetric.
+
+    TLSMetric ist Freie Software: Sie können es unter den Bedingungen
+    der GNU General Public License, wie von der Free Software Foundation,
+    Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+    veröffentlichten Version, weiterverbreiten und/oder modifizieren.
+
+    TLSMetric wird in der Hoffnung, dass es nützlich sein wird, aber
+    OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite
+    Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+    Siehe die GNU General Public License für weitere Details.
+
+    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
+ */
+
+package de.felixschiller.tlsmetric.VpnCaptureService;
 
 import android.util.Log;
 
@@ -9,9 +46,12 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
+import de.felixschiller.tlsmetric.VpnCaptureService.Flow.SocketData;
+import de.felixschiller.tlsmetric.VpnCaptureService.Flow.TcpFlow;
 
 /**
- * Generates Answering Packages
+ * Generates IP and TCP/UDP packets from payload (or none) and a given flow element.
+ *
  */
 public class PacketGenerator {
 
@@ -113,6 +153,7 @@ public class PacketGenerator {
         return b;
     }
 
+    //forge an IPv4 header
     public static byte[] forgeIp4(SocketData data, byte[] payload){
         int length =  sIp4Dummy.length + payload.length;
         //ByteBuffers for assembling and int-conversion.
@@ -147,11 +188,14 @@ public class PacketGenerator {
         bb.put(cs, 2, 2);
         return bb.array();
     }
+
+    //forge an IPv4 header
     public static byte[] forgeIp6(SocketData data, byte[] payload){
         //TODO: implement
         return null;
     }
 
+    //forge an TCP header
     public static byte[] forgeTCP(TcpFlow data, byte[] payload, Byte flag){
         int length =  sTcpDummy.length + payload.length;
         //ByteBuffers for assembling and int-conversion.
@@ -198,7 +242,7 @@ public class PacketGenerator {
     }
 
 
-    //Forge an udp packet based on the dummy
+    //Forge an udp packet
     public static byte[] forgeUDP(SocketData data, byte[] payload){
         int length =  sUdpDummy.length + payload.length;
         //ByteBuffers for assembling and int-conversion.
@@ -224,6 +268,7 @@ public class PacketGenerator {
         return bb.array();
     }
 
+    //String to java-readable byte array.
     public static byte[] hexStringToByteArray(String s) {
         byte[] b = new byte[s.length() / 2];
         for (int i = 0; i < b.length; i++) {
@@ -233,6 +278,8 @@ public class PacketGenerator {
         }
         return b;
     }
+
+    //Extract TCP flags
     public static void handleFlags(TcpFlow data, Header header) {
         data.flags = intToTwoBytes((int) header.getValue("code"));
         data.fin = ((data.flags[1] & (byte) 0x01) != (byte) 0x00);
@@ -240,6 +287,7 @@ public class PacketGenerator {
         data.rst = ((data.flags[1] & (byte) 0x04) != (byte) 0x00);
     }
 
+    //Extract Flow an Seq numbers of initial flow
     public static void initFlow(TcpFlow data, Header header){
         //generate initial ACK and SEQ NR
         if (data.seqNr == null) {
@@ -254,9 +302,9 @@ public class PacketGenerator {
         }
         handleFlags(data, header);
     }
-    /*
-     * TCP flow control and packet forging logic methods for transmitting packages.
-     */
+
+
+     //TCP flow control and packet forging logic methods for transmitting packages.
     public static void handleFlowAtSend(TcpFlow data, Header header, int payloadLen){
         if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Handle Flow of channel id: " + data.getSrcPort()
                 + " payload length: " + payloadLen);
@@ -283,9 +331,7 @@ public class PacketGenerator {
         handleFlags(data, header);
     }
 
-    /*
-     * TCP flow control and packet forging logic methods called after receiving packages.
-     */
+    //TCP flow control and packet forging logic methods called after receiving packages.
     public static void handleFlowAtRecieve(TcpFlow data, Header header, int payloadLen){
         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Handle receiving Flow, payload: " + payloadLen + " Bytes.");
 
@@ -430,6 +476,7 @@ public class PacketGenerator {
         return bb.array();
     }
 
+    //Convert a Java long to a four byte array
     public static byte[] longToFourBytes(long l){
         ByteBuffer bb = ByteBuffer.allocate(8);
         byte[] b = new byte[4];
@@ -439,6 +486,8 @@ public class PacketGenerator {
         return b;
 
     }
+
+    //Convert a Java int to a two byte array
     public static byte[] intToTwoBytes(int i){
         ByteBuffer bb = ByteBuffer.allocate(4);
         byte[] b = new byte[2];
@@ -448,6 +497,7 @@ public class PacketGenerator {
         return b;
     }
 
+    //Convert four bytes to a Java Long
     public static long fourBytesToLong(byte[] b){
         ByteBuffer bb = ByteBuffer.allocate(8);
         bb.position(4);

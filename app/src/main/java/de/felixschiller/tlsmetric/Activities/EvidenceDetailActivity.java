@@ -1,3 +1,40 @@
+/*
+    TLSMetric
+    - Copyright (2015, 2016) Felix Tsala Schiller
+
+    ###################################################################
+
+    This file is part of TLSMetric.
+
+    TLSMetric is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    TLSMetric is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with TLSMetric.  If not, see <http://www.gnu.org/licenses/>.
+
+    Diese Datei ist Teil von TLSMetric.
+
+    TLSMetric ist Freie Software: Sie können es unter den Bedingungen
+    der GNU General Public License, wie von der Free Software Foundation,
+    Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+    veröffentlichten Version, weiterverbreiten und/oder modifizieren.
+
+    TLSMetric wird in der Hoffnung, dass es nützlich sein wird, aber
+    OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite
+    Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+    Siehe die GNU General Public License für weitere Details.
+
+    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
+ */
+
 package de.felixschiller.tlsmetric.Activities;
 
 import android.content.Context;
@@ -12,7 +49,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -23,11 +59,14 @@ import java.util.ArrayList;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
-import de.felixschiller.tlsmetric.PacketAnalyze.Announcement;
-import de.felixschiller.tlsmetric.PacketAnalyze.Evidence;
-import de.felixschiller.tlsmetric.PacketAnalyze.PackageInformation;
+import de.felixschiller.tlsmetric.PacketProcessing.Report;
+import de.felixschiller.tlsmetric.PacketProcessing.Evidence;
+import de.felixschiller.tlsmetric.PacketProcessing.PackageInformation;
 import de.felixschiller.tlsmetric.R;
 
+/**
+ * Evidence Detail Panel. List all reports of a connection, invoked by Evidence Panel (EvidenceActivity)
+ */
 public class EvidenceDetailActivity extends AppCompatActivity{
 
     @Override
@@ -51,7 +90,7 @@ public class EvidenceDetailActivity extends AppCompatActivity{
             adapter = new DetailAdapter(this, copyArrayList(Evidence.mEvidenceDetail));
         } else {
             if(Const.IS_DEBUG) Log.e(Const.LOG_TAG, "Evidence list not existing or empty!");
-            adapter = new DetailAdapter(this, new ArrayList<Announcement>());
+            adapter = new DetailAdapter(this, new ArrayList<Report>());
             Toast.makeText(EvidenceDetailActivity.this, "No connections availiable.", Toast.LENGTH_SHORT).show();
         }
 
@@ -92,15 +131,15 @@ public class EvidenceDetailActivity extends AppCompatActivity{
 
 
 
-    private class DetailAdapter extends ArrayAdapter<Announcement> {
+    private class DetailAdapter extends ArrayAdapter<Report> {
 
-        private final Announcement[] anns;
+        private final Report[] anns;
         private final Context context;
 
-        public DetailAdapter(Context context, ArrayList<Announcement> AnnList) {
+        public DetailAdapter(Context context, ArrayList<Report> AnnList) {
             super(context, R.layout.evidence_detail_entry, AnnList);
             this.context = context;
-            this.anns = new Announcement[AnnList.size()];
+            this.anns = new Report[AnnList.size()];
             for(int i = 0; i < AnnList.size(); i++){
                 this.anns[i] = AnnList.get(i);
             }
@@ -148,7 +187,8 @@ public class EvidenceDetailActivity extends AppCompatActivity{
 
     }
 
-    private String generateDetail(Announcement ann) {
+    //Generate detail information based ob the report.
+    private String generateDetail(Report ann) {
         String detail = ann.filter.description;
         detail += " \n Severity: " + ann.filter.severity ;
         switch (ann.filter.severity){
@@ -194,9 +234,11 @@ public class EvidenceDetailActivity extends AppCompatActivity{
         super.onDestroy();
     }
 
-    public ArrayList<Announcement> copyArrayList(ArrayList<Announcement> anns){
-        ArrayList<Announcement> copy = new ArrayList<>();
-        for(Announcement ann: anns){
+    //Poor excuse for a copy constructor
+    //TODO: Make real copy constructors
+    public ArrayList<Report> copyArrayList(ArrayList<Report> anns){
+        ArrayList<Report> copy = new ArrayList<>();
+        for(Report ann: anns){
             copy.add(ann);
         }
         return copy;

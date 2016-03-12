@@ -1,4 +1,42 @@
-package de.felixschiller.tlsmetric.PacketAnalyze;
+/*
+    TLSMetric
+    - Copyright (2015, 2016) Felix Tsala Schiller
+
+    ###################################################################
+
+    This file is part of TLSMetric.
+
+    TLSMetric is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    TLSMetric is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with TLSMetric.  If not, see <http://www.gnu.org/licenses/>.
+
+    Diese Datei ist Teil von TLSMetric.
+
+    TLSMetric ist Freie Software: Sie können es unter den Bedingungen
+    der GNU General Public License, wie von der Free Software Foundation,
+    Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+    veröffentlichten Version, weiterverbreiten und/oder modifizieren.
+
+    TLSMetric wird in der Hoffnung, dass es nützlich sein wird, aber
+    OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite
+    Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+    Siehe die GNU General Public License für weitere Details.
+
+    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
+ */
+
+
+package de.felixschiller.tlsmetric.PacketProcessing;
 
 import android.app.ActivityManager;
 import android.content.Context;
@@ -25,19 +63,19 @@ import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.Assistant.ExecuteCommand;
 import de.felixschiller.tlsmetric.Assistant.ToolBox;
-import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Empty;
-import de.felixschiller.tlsmetric.PacketAnalyze.Filter.Filter;
+import de.felixschiller.tlsmetric.PacketProcessing.Filter.Empty;
+import de.felixschiller.tlsmetric.PacketProcessing.Filter.Filter;
 import de.felixschiller.tlsmetric.R;
 
 /**
- * Class for generating connection information (Announcements) from packets, which has been
- * detected by the filters.
+ * Class for generating connection information (Evidence Reports) from packets, which has been
+ * detected by the Analyser Service.
  */
 public class Evidence {
     //public Members
-    public static ArrayList<Announcement> mEvidence;
-    public static ArrayList<Announcement> mEvidenceDetail;
-    public static HashMap<Integer, ArrayList<Announcement>> mEvidenceDetailMap;
+    public static ArrayList<Report> mEvidence;
+    public static ArrayList<Report> mEvidenceDetail;
+    public static HashMap<Integer, ArrayList<Report>> mEvidenceDetailMap;
     public static HashMap<Integer, PackageInformation> mPacketInfoMap;
     public static int newWarnings;
 
@@ -56,7 +94,8 @@ public class Evidence {
     }
 
 
-
+    // Update currently active connection
+    // TODO: UID/PID detection needs improvement. Unknown Apps exist
     public static void updateConnections(){
         updatePortPidMap();
         Set<Integer> ports = mPortPidMap.keySet();
@@ -67,7 +106,7 @@ public class Evidence {
                 }
             }
         for (int port: ports) {
-            Announcement ann = new Announcement();
+            Report ann = new Report();
             ann.filter = new Empty(Filter.Protocol.UNKNOWN,-1,"SrcPort: " + port + "No data.");
             ann.touch();
             ann.srcPort = port;
@@ -79,11 +118,12 @@ public class Evidence {
         }
    }
 
+    // Filter triggered? -> Generate Report
     public boolean processPacket(Packet pkt) {
         Filter filter = scanPacket(pkt);
         if (filter != null) {
             if (Const.IS_DEBUG) Log.d(Const.LOG_TAG, "Filter triggered: " + filter.protocol);
-            Announcement ann = generateAnnouncement(pkt, filter);
+            Report ann = generateReport(pkt, filter);
             addEvidenceEntry(ann);
             return true;
         } else {
@@ -92,7 +132,8 @@ public class Evidence {
 
     }
 
-    private static void addEvidenceEntry(Announcement ann){
+    // Sort a Reports in the Lists
+    private static void addEvidenceEntry(Report ann){
 
         boolean updated = false;
 
@@ -119,9 +160,9 @@ public class Evidence {
 
         //Add found filters to detail list, if triggered filter not already exist.
         if(mEvidenceDetailMap.containsKey(ann.srcPort)){
-            ArrayList<Announcement> detailList = mEvidenceDetailMap.get(ann.srcPort);
+            ArrayList<Report> detailList = mEvidenceDetailMap.get(ann.srcPort);
             boolean hasFilter = false;
-            for(Announcement exAnn : detailList){
+            for(Report exAnn : detailList){
                 if(exAnn.filter.getClass() == ann.filter.getClass()){
                     exAnn.touch();
                     hasFilter = true;
@@ -131,12 +172,14 @@ public class Evidence {
                 detailList.add(ann);
             }
         } else {
-            ArrayList<Announcement> newList = new ArrayList<>();
+            ArrayList<Report> newList = new ArrayList<>();
             newList.add(ann);
             mEvidenceDetailMap.put(ann.srcPort, newList);
         }
     }
 
+    //Scan a packet for TCP payload and initiate identification
+    //TODO: Move alle detection methods in new module when new filter system is designed
     private Filter scanPacket(Packet pkt) {
 
         if (pkt.hasHeader("TCP") && pkt.hasDataHeader()) {
@@ -166,8 +209,9 @@ public class Evidence {
         }
     }
 
-    public static Announcement generateAnnouncement(Packet pkt, Filter filter) {
-        Announcement ann = new Announcement();
+    // generate an evidence report.
+    public static Report generateReport(Packet pkt, Filter filter) {
+        Report ann = new Report();
         ann.filter = filter;
         ann.touch();
         fillConnectionData(ann, pkt);
@@ -177,7 +221,8 @@ public class Evidence {
         return ann;
     }
 
-    private static void fillConnectionData(Announcement ann, Packet pkt) {
+    //Extract connection details from packet
+    private static void fillConnectionData(Report ann, Packet pkt) {
         Header ipHeader;
         Header transportHeader;
         ann.timestamp = new Timestamp(System.currentTimeMillis());
@@ -220,10 +265,7 @@ public class Evidence {
         }
     }
 
-    /**
-     * Updates the PackageInformation hash map with new entries.
-     * @param pid pid of the searched package
-     */
+    //Updates the PackageInformation hash map with new entries.
     private static void updatePackageInformationData(int pid, int uid) {
         if (pid >= 0 && !mPacketInfoMap.containsKey(pid)){
             PackageManager pm = ContextSingleton.getContext().getPackageManager();
@@ -252,6 +294,7 @@ public class Evidence {
         }
     }
 
+    //Remove all reports of inactive connection
     public static void disposeInactiveEvidence(){
         for (int i = 0; i < mEvidence.size(); i++){
             if(!Evidence.mPortUidMap.containsKey(mEvidence.get(i).srcPort)){
@@ -292,6 +335,8 @@ public class Evidence {
     private static void updatePortUidMap(){
         mPortUidMap = getPortMap();
     }
+
+    //match pid and uid, accessiable by port
     private static void updatePortPidMap() {
         updateUidPidMap();
         updatePortUidMap();
@@ -304,6 +349,7 @@ public class Evidence {
         }
     }
 
+    //match pids
     public static void updateUidPidMap(){
         ActivityManager am = (ActivityManager) ContextSingleton.getContext().getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> infos = am.getRunningAppProcesses();
@@ -315,6 +361,7 @@ public class Evidence {
         }
     }
 
+    //parse net output and scan for new conenctions, sort by port
     public static HashMap<Integer, Integer> getPortMap() {
         HashMap<Integer, Integer> result = new HashMap<>();
         String commandTcp4 = "cat /proc/net/tcp";
@@ -326,6 +373,7 @@ public class Evidence {
         return result;
     }
 
+    //Parse output from /proc/net/tcp
     public static void parseNetOutput(String readIn, HashMap<Integer, Integer> hashMap) {
         String[] splitLines;
         String[] splitTabs;
@@ -351,6 +399,7 @@ public class Evidence {
         }
     }
 
+    // request PacketInformation
     public static PackageInformation getPackageInformation(int pid,int uid) {
         if(mPacketInfoMap.containsKey(pid)){
             return mPacketInfoMap.get(pid);
@@ -369,13 +418,13 @@ public class Evidence {
 
     }
 
-    //Just a BubbleSort - order ArrayList<Announcement> in place by by severity, DESC
-    private static void sortAnnList(ArrayList<Announcement> annList){
+    //Just a BubbleSort - order ArrayList<Report> in place by by severity, DESC
+    private static void sortAnnList(ArrayList<Report> annList){
         int range = annList.size() - 1;
         while(range > 1){
             for(int i = 0; i < range; i ++){
                 if(annList.get(i).filter.severity < annList.get(i + 1).filter.severity){
-                    Announcement tmpAnn = annList.get(i);
+                    Report tmpAnn = annList.get(i);
                     annList.set(i, annList.get(i + 1));
                     annList.set(i + 1, tmpAnn);
                 }
@@ -384,15 +433,21 @@ public class Evidence {
         }
     }
 
-public static ArrayList<Announcement> getSortedEvidence(){
-    sortAnnList(mEvidence);
-    return mEvidence;
-}
+    //Sort the report list and return it report
+    //TODO: deep copy
+    public static ArrayList<Report> getSortedEvidence(){
+        sortAnnList(mEvidence);
+        return mEvidence;
+    }
+
+    //Sort the report detail list and return it report
+    //TODO: deep copy
     public static void setSortedEvidenceDetail(int key){
         sortAnnList(mEvidenceDetailMap.get(key));
         mEvidenceDetail = mEvidenceDetailMap.get(key);
     }
 
+    //No UID/PID match? Go dummy!
     private static PackageInformation generateDummy() {
         PackageInformation pi = new PackageInformation();
         pi.icon = ContextSingleton.getContext().getResources().getDrawable(R.mipmap.unknown_app);
@@ -402,9 +457,10 @@ public static ArrayList<Announcement> getSortedEvidence(){
         return pi;
     }
 
+    // Get highest severity level in list
     public static int getMaxSeverity(){
         int severity = -1;
-        for(Announcement ann : mEvidence){
+        for(Report ann : mEvidence){
             if(ann.filter.severity > severity){
                 severity = ann.filter.severity;
             }

@@ -1,4 +1,41 @@
-package de.felixschiller.tlsmetric.PacketAnalyze;
+/*
+    TLSMetric
+    - Copyright (2015, 2016) Felix Tsala Schiller
+
+    ###################################################################
+
+    This file is part of TLSMetric.
+
+    TLSMetric is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    TLSMetric is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with TLSMetric.  If not, see <http://www.gnu.org/licenses/>.
+
+    Diese Datei ist Teil von TLSMetric.
+
+    TLSMetric ist Freie Software: Sie können es unter den Bedingungen
+    der GNU General Public License, wie von der Free Software Foundation,
+    Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+    veröffentlichten Version, weiterverbreiten und/oder modifizieren.
+
+    TLSMetric wird in der Hoffnung, dass es nützlich sein wird, aber
+    OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite
+    Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+    Siehe die GNU General Public License für weitere Details.
+
+    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
+ */
+
+package de.felixschiller.tlsmetric.PacketProcessing;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -30,13 +67,15 @@ import de.felixschiller.tlsmetric.Activities.MainActivity;
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 import de.felixschiller.tlsmetric.R;
-import de.felixschiller.tlsmetric.RootDump.DumpHandler;
+import de.felixschiller.tlsmetric.DumpHandler.DumpHandler;
 
 
 /**
  * Packet Analyzer Service. Working with VPN- or Dump-core, set by boolean.
+ *
+ * Each packet captured by a dump-core is checked for protocol filters.
  */
-public class AnalyzerService extends Service {
+public class AnalyserService extends Service {
 
     public static boolean mInterrupt;
     private Thread mThread;
@@ -80,6 +119,7 @@ public class AnalyzerService extends Service {
         }
     }
 
+    //Icons for Notification manager. Must be converted to bitmaps.
     private void loadNotificationBitmaps() {
         //mQuest = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_quest, mBitmapOptions);
         mOk = BitmapFactory.decodeResource(getResources(), R.mipmap.icon_ok);
@@ -144,9 +184,9 @@ public class AnalyzerService extends Service {
     }
 
     /*
-    * Returns the dumped Packet or null. Null means thread will sleep. If the dumpfile is empty a
-    * new initialization attempt will be made.
-     */
+    * Returns the dumped Packet or null. Null means no packet is availiable and thread will sleep.
+    * If the dumpfile is empty a new initialization attempt will be made.
+    */
     private Packet dumpNext() throws IOException, SyntaxError {
 
         if (!isVpn && !mIsFileEmpty) {
@@ -170,6 +210,7 @@ public class AnalyzerService extends Service {
         return null;
     }
 
+    //File empty?
     private void checkEmptyFile(File file) {
         try {
             FileInputStream fis = new FileInputStream(file);
@@ -180,6 +221,7 @@ public class AnalyzerService extends Service {
         }
     }
 
+    //Fill decoder of the framework
     private void initDecoderWithDumpfile() {
         try {
             if (mDumpFile.exists()) {
@@ -206,11 +248,12 @@ public class AnalyzerService extends Service {
             }
         }
     }
+
+    //BG notification. Standard Android version.
     private void showAppNotification(){
         mBuilder.setSmallIcon(R.mipmap.icon);
         mBuilder.setLargeIcon(mOk);
-        // Creates an explicit intent for an Activity in your app
-        Intent resultIntent = new Intent(this, MainActivity.class);
+            Intent resultIntent = new Intent(this, MainActivity.class);
 
         // The stack builder object will contain an artificial back stack for the
         // started Activity.
@@ -233,6 +276,7 @@ public class AnalyzerService extends Service {
         mNotificationManager.notify(Const.LOG_TAG, 1, mBuilder.build());
     }
 
+    //Computes the need and severity of a notification.
     private void showWarningNotification(){
         //Set corresponding icon
         if(Evidence.getMaxSeverity() > 2){
@@ -264,19 +308,17 @@ public class AnalyzerService extends Service {
         mNotificationManager.notify(Const.LOG_TAG, 1, mBuilder.build());
     }
 
+    //Revoke notifications
     private void showNoNotification(){
         NotificationManager mNotificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.cancelAll();
     }
-    /*
-     * Class for clients to access.  Because we know this service always
-     * runs in the same process as its clients, we don't need to deal with
-     * IPC.
-     */
+
+    //For future IPC implementations
     public class AnalyzerBinder extends Binder {
-        AnalyzerService getService() {
-            return AnalyzerService.this;
+        AnalyserService getService() {
+            return AnalyserService.this;
         }
     }
 

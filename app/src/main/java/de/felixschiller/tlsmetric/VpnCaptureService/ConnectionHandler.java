@@ -1,4 +1,41 @@
-package de.felixschiller.tlsmetric.VpnDump;
+/*
+    TLSMetric
+    - Copyright (2015, 2016) Felix Tsala Schiller
+
+    ###################################################################
+
+    This file is part of TLSMetric.
+
+    TLSMetric is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    TLSMetric is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with TLSMetric.  If not, see <http://www.gnu.org/licenses/>.
+
+    Diese Datei ist Teil von TLSMetric.
+
+    TLSMetric ist Freie Software: Sie können es unter den Bedingungen
+    der GNU General Public License, wie von der Free Software Foundation,
+    Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+    veröffentlichten Version, weiterverbreiten und/oder modifizieren.
+
+    TLSMetric wird in der Hoffnung, dass es nützlich sein wird, aber
+    OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite
+    Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+    Siehe die GNU General Public License für weitere Details.
+
+    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
+ */
+
+package de.felixschiller.tlsmetric.VpnCaptureService;
 
 import android.util.Log;
 
@@ -13,9 +50,12 @@ import java.util.Iterator;
 import java.util.Set;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
+import de.felixschiller.tlsmetric.VpnCaptureService.Flow.SocketData;
+import de.felixschiller.tlsmetric.VpnCaptureService.Flow.TcpFlow;
+import de.felixschiller.tlsmetric.VpnCaptureService.Flow.UdpFlow;
 
 /**
- * Connection Handler.. what more to say
+ * Handler for socket and connection management.
  */
 public class ConnectionHandler {
 
@@ -70,7 +110,7 @@ public class ConnectionHandler {
     }
 
 
-
+    // Get header length to payload data
     public static int getHeaderOffset(Packet pkt){
         Header ipHeader;
         Header transportHeader;
@@ -96,12 +136,10 @@ public class ConnectionHandler {
 
 
 
-    /*
-     * Kills all artificial VPN Bypass channels
-     */
+    //Kills all channels the selector holds.
     public static void killAll() throws IOException {
         if(Const.IS_DEBUG)Log.d(Const.LOG_TAG, "Closing ALL channels.");
-        Set<SelectionKey> allKeys = VpnBypassService.mSelector.keys();
+        Set<SelectionKey> allKeys = VpnCaptureService.mSelector.keys();
         Iterator<SelectionKey> keyIterator = allKeys.iterator();
         SelectionKey key;
         while (keyIterator.hasNext()) {
@@ -111,6 +149,7 @@ public class ConnectionHandler {
         }
     }
 
+    // Extract TCP header flags.
     public static byte[] handleFlags(TcpFlow flow) throws IOException {
 
         //Detect SYN Flag and initiate Handshake if present

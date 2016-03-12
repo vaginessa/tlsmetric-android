@@ -35,29 +35,15 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
  */
 
-package de.felixschiller.tlsmetric.Assistant;
-
-
-import android.app.Activity;
-import android.content.Context;
+package de.felixschiller.tlsmetric.PacketProcessing.Filter;
 
 /**
- * Singleton which holds the context of the current/last activity.
+ * HTTP protocol filter. Example for unencrypted traffic.
  */
+public class Http extends Filter {
 
-public class ContextSingleton {
-
-        private static Activity gContext;
-
-        public static void setContext( Activity activity) {
-            gContext = activity;
-        }
-
-        public static Activity getActivity() {
-            return gContext;
-        }
-
-        public static Context getContext() {
-            return gContext;
-        }
+    public Http(Protocol protocol, int severity, String description) {
+        super(protocol, severity, description);
+        checkCypher = false;
+    }
 }

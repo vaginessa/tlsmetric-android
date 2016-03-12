@@ -35,29 +35,35 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
  */
 
-package de.felixschiller.tlsmetric.Assistant;
+package de.felixschiller.tlsmetric.DumpHandler;
 
+import android.widget.Toast;
 
-import android.app.Activity;
-import android.content.Context;
+import com.stericson.RootTools.RootTools;
+
+import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
 
 /**
- * Singleton which holds the context of the current/last activity.
+ * Checks for su and busybox dependecies. These apps are needed for root access based packet dumping.
+ * Depreached, will be replaced by own methods to reduce framework load
  */
+public class CheckDependencies {
 
-public class ContextSingleton {
 
-        private static Activity gContext;
+    //Check for su and alert if not found on device
+    public static void checkSu(){
 
-        public static void setContext( Activity activity) {
-            gContext = activity;
+        if (RootTools.isRootAvailable()) {
+            Toast toast = Toast.makeText(ContextSingleton.getActivity(), "Superuser is installed.", Toast.LENGTH_LONG);
+            toast.show();
+        } else {
+            Toast toast = Toast.makeText(ContextSingleton.getActivity(), "Superuser is NOT installed. \n" +
+                    "opening download screen", Toast.LENGTH_LONG);
+            toast.show();
+            //TODO: Remove RootTools API artefacts.
+            //RootTools.offerSuperUser(MainActivity.sActivity);
         }
+    }
 
-        public static Activity getActivity() {
-            return gContext;
-        }
 
-        public static Context getContext() {
-            return gContext;
-        }
 }

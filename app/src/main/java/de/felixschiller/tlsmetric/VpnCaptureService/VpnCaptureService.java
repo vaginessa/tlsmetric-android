@@ -1,4 +1,41 @@
-package de.felixschiller.tlsmetric.VpnDump;
+/*
+    TLSMetric
+    - Copyright (2015, 2016) Felix Tsala Schiller
+
+    ###################################################################
+
+    This file is part of TLSMetric.
+
+    TLSMetric is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    TLSMetric is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with TLSMetric.  If not, see <http://www.gnu.org/licenses/>.
+
+    Diese Datei ist Teil von TLSMetric.
+
+    TLSMetric ist Freie Software: Sie können es unter den Bedingungen
+    der GNU General Public License, wie von der Free Software Foundation,
+    Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+    veröffentlichten Version, weiterverbreiten und/oder modifizieren.
+
+    TLSMetric wird in der Hoffnung, dass es nützlich sein wird, aber
+    OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite
+    Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+    Siehe die GNU General Public License für weitere Details.
+
+    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
+ */
+
+package de.felixschiller.tlsmetric.VpnCaptureService;
 
 import android.content.Context;
 import android.content.Intent;
@@ -33,25 +70,32 @@ import java.util.Set;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.R;
+import de.felixschiller.tlsmetric.VpnCaptureService.Flow.SocketData;
+import de.felixschiller.tlsmetric.VpnCaptureService.Flow.TcpFlow;
+import de.felixschiller.tlsmetric.VpnCaptureService.Flow.UdpFlow;
 
 /**
- * A VPN bypass service to route the network packages to the device itself
- * VPN service has been taken and modified for own purpose from:
- *  - http://www.thegeekstuff.com/2014/06/android-vpn-service/
+ * A VPN packet capturing service. All Packets get repacket and sent directly to the target hosts
+ * by datagram and socket channels. Supports UDP and TCP protocols.
+ *
 */
-public class VpnBypassService extends VpnService {
+public class VpnCaptureService extends VpnService {
 
     // Keys for all channels are the source ports (client ports) of the outgoing connection.
     public static Selector mSelector;
     public static Queue<QueuePacket> mSendQueue = new LinkedList<>();
+
     //channel List to combat racing conditions
     public static HashSet<Integer> mChannels = new HashSet<>();
     public static QueuePacketInputStream mClone;
-    //a. Configure a builder for the interface.
+
+    //Creator for VPN interface
     Builder builder = new Builder();
+
     //Thread
     private Thread mThread;
     private ParcelFileDescriptor mInterface;
+
     // Packet stream decoder JnetStream:
     private QueuePacketInputStream mPin;
     private Decoder mDecoder;
@@ -60,13 +104,11 @@ public class VpnBypassService extends VpnService {
 
     //Kickstart!
     public static void start(Context context) {
-        Intent intent = new Intent(context, VpnBypassService.class);
+        Intent intent = new Intent(context, VpnCaptureService.class);
         context.startService(intent);
     }
 
-    /*
-     * Sends the packet out, if there's paylaod
-     */
+    //Sends the packet out, if there's paylaod
     public static boolean sendPacket(byte[] b, Packet pkt, SelectionKey key) throws IOException {
         SocketData data = (SocketData) key.attachment();
         data.offset = ConnectionHandler.getHeaderOffset(pkt);
@@ -146,7 +188,7 @@ public class VpnBypassService extends VpnService {
                 try {
                     //Configure the TUN interface.
                     mInterface = builder.setSession("VPNBypassService")
-                            //TODO: add Ipv6
+                            //TODO: add Ipv6 and MTU
                             .addAddress("10.0.2.1", 32)
                             .addRoute("0.0.0.0", 1)
                             .addRoute("128.0.0.0", 1)
@@ -184,7 +226,7 @@ public class VpnBypassService extends VpnService {
                         //Kill channels in with destroyed-flag afgter timeout
                         garbageChannels();
 
-                        //TODO adjust Value
+                        //TODO test Value
                         Thread.sleep(100);
                     }
 
@@ -214,7 +256,7 @@ public class VpnBypassService extends VpnService {
 
     @Override
     public void onDestroy() {
-        if (Const.IS_DEBUG) Log.d(getString(R.string.app_name), "Destroy VpnBypassService.");
+        if (Const.IS_DEBUG) Log.d(getString(R.string.app_name), "Destroy VpnCaptureService.");
         if (mThread != null) {
             mThread.interrupt();
         }
@@ -298,7 +340,7 @@ public class VpnBypassService extends VpnService {
 
         //High timeout variable to combat racing conditions
         mSelector.selectNow();
-        Set allKey = VpnBypassService.mSelector.selectedKeys();
+        Set allKey = VpnCaptureService.mSelector.selectedKeys();
         Iterator<SelectionKey> keyIterator = allKey.iterator();
         SelectionKey key;
 
@@ -417,7 +459,7 @@ public class VpnBypassService extends VpnService {
             DatagramChannel datagramChannel = DatagramChannel.open();
             datagramChannel.configureBlocking(false);
             int interestSet = SelectionKey.OP_READ |SelectionKey.OP_WRITE;
-            key = datagramChannel.register(VpnBypassService.mSelector, interestSet, data);
+            key = datagramChannel.register(VpnCaptureService.mSelector, interestSet, data);
             if (!protect(datagramChannel.socket())) {
                 Log.e(Const.LOG_TAG, "Could not protect socket");
             } else {
@@ -436,7 +478,7 @@ public class VpnBypassService extends VpnService {
     public byte[]  ManageReceiving() throws IOException, StreamFormatException, SyntaxError {
 
         mSelector.selectNow();
-        Set<SelectionKey> keySet = VpnBypassService.mSelector.selectedKeys();
+        Set<SelectionKey> keySet = VpnCaptureService.mSelector.selectedKeys();
         Iterator<SelectionKey> keyIterator = keySet.iterator();
         byte[] b;
         //Read bytes where channels have data available
@@ -502,7 +544,7 @@ public class VpnBypassService extends VpnService {
     public void garbageChannels() throws IOException {
         // Timeout for garbage channels
         Timestamp time;
-        Set<SelectionKey> allKeys = VpnBypassService.mSelector.keys();
+        Set<SelectionKey> allKeys = VpnCaptureService.mSelector.keys();
         Iterator<SelectionKey> keyIterator = allKeys.iterator();
         SelectionKey key;
         while (keyIterator.hasNext()) {

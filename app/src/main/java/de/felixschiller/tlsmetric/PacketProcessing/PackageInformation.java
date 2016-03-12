@@ -35,29 +35,16 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
  */
 
-package de.felixschiller.tlsmetric.Assistant;
+package de.felixschiller.tlsmetric.PacketProcessing;
 
-
-import android.app.Activity;
-import android.content.Context;
+import android.graphics.drawable.Drawable;
 
 /**
- * Singleton which holds the context of the current/last activity.
+ * Detail of an application
  */
-
-public class ContextSingleton {
-
-        private static Activity gContext;
-
-        public static void setContext( Activity activity) {
-            gContext = activity;
-        }
-
-        public static Activity getActivity() {
-            return gContext;
-        }
-
-        public static Context getContext() {
-            return gContext;
-        }
+public class PackageInformation {
+    public int pid;
+    public int uid;
+    public Drawable icon;
+    public String packageName;
 }

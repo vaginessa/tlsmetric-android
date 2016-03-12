@@ -35,29 +35,37 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
  */
 
-package de.felixschiller.tlsmetric.Assistant;
+package de.felixschiller.tlsmetric.VpnCaptureService.Flow;
 
-
-import android.app.Activity;
-import android.content.Context;
+import java.sql.Timestamp;
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
- * Singleton which holds the context of the current/last activity.
+ * Extended socket data class with flags and sequence numbers to keep track of tcp flows.
+ *
+ * Note: Some flags are not detected, since this implementation has no control of all tcp mechanisms.
  */
+public class TcpFlow extends SocketData{
 
-public class ContextSingleton {
 
-        private static Activity gContext;
+    public byte[] flags;
+    public byte[] seqNr;
+    public byte[] ackNr;
 
-        public static void setContext( Activity activity) {
-            gContext = activity;
-        }
+    public boolean syn;
+    public boolean fin;
+    public boolean rst;
 
-        public static Activity getActivity() {
-            return gContext;
-        }
+    public boolean isBreakdown;
 
-        public static Context getContext() {
-            return gContext;
-        }
+    public Queue<byte[]> seqQueue = new LinkedList<>();
+    public Queue<byte[]> ackQueue = new LinkedList<>();
+
+    public TcpFlow(byte[] srcAdd, byte[] dstAdd, int srcPort, int dstPort, Timestamp time, int ipVersion) {
+        super(srcAdd, dstAdd, srcPort, dstPort,time, ipVersion);
+        super.setTransport(Transport.TCP);
+    }
+
+
 }

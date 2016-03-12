@@ -35,29 +35,18 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
  */
 
-package de.felixschiller.tlsmetric.Assistant;
+package de.felixschiller.tlsmetric.VpnCaptureService.Flow;
 
 
-import android.app.Activity;
-import android.content.Context;
+import java.sql.Timestamp;
 
 /**
- * Singleton which holds the context of the current/last activity.
+ * UdpFlow extended socket data. Pretty straightforwardish thing.
  */
+public class UdpFlow extends SocketData{
 
-public class ContextSingleton {
-
-        private static Activity gContext;
-
-        public static void setContext( Activity activity) {
-            gContext = activity;
-        }
-
-        public static Activity getActivity() {
-            return gContext;
-        }
-
-        public static Context getContext() {
-            return gContext;
-        }
+    public UdpFlow(byte[] srcAdd, byte[] dstAdd, int srcPort, int dstPort, Timestamp time, int ipVersion){
+        super(srcAdd, dstAdd, srcPort,dstPort,time, ipVersion);
+        super.setTransport(Transport.UDP);
+    }
 }

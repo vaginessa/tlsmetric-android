@@ -35,29 +35,33 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
  */
 
-package de.felixschiller.tlsmetric.Assistant;
+package de.felixschiller.tlsmetric.PacketProcessing;
 
 
-import android.app.Activity;
-import android.content.Context;
+import java.net.InetAddress;
+import java.sql.Timestamp;
+
+import de.felixschiller.tlsmetric.PacketProcessing.Filter.Filter;
 
 /**
- * Singleton which holds the context of the current/last activity.
+ * Evidence report
  */
+public class Report {
 
-public class ContextSingleton {
+    public InetAddress dstAddr;
+    public String url;
+    public int srcPort;
+    public int dstPort;
+    public Timestamp timestamp;
 
-        private static Activity gContext;
+    public int pid;
+    public int uid;
 
-        public static void setContext( Activity activity) {
-            gContext = activity;
-        }
+    public Filter filter;
 
-        public static Activity getActivity() {
-            return gContext;
-        }
+    //Set current timestamp
+    public void touch(){
+        timestamp = new Timestamp(System.currentTimeMillis());
+    }
 
-        public static Context getContext() {
-            return gContext;
-        }
 }

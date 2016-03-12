@@ -35,29 +35,27 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
  */
 
-package de.felixschiller.tlsmetric.Assistant;
-
-
-import android.app.Activity;
-import android.content.Context;
+package de.felixschiller.tlsmetric.PacketProcessing.Filter;
 
 /**
- * Singleton which holds the context of the current/last activity.
+ * Protocol filter for all TLS versions. Can hold a message type identifier.
  */
+public class Tls extends Filter {
 
-public class ContextSingleton {
+    public TlsProtocol mSubProtocol;
+    public int mVersion;
 
-        private static Activity gContext;
+    public Tls(Protocol protocol, int severity, String description, TlsProtocol subProtocol, int version) {
+        super(protocol, severity, description);
+        checkCypher = true;
+        mSubProtocol = subProtocol;
+        mVersion = version;
+    }
 
-        public static void setContext( Activity activity) {
-            gContext = activity;
-        }
-
-        public static Activity getActivity() {
-            return gContext;
-        }
-
-        public static Context getContext() {
-            return gContext;
-        }
+    public enum TlsProtocol {
+        HANDSHAKE,
+        CHANGE_CYPHER,
+        ALERT,
+        APP_DATA
+    }
 }

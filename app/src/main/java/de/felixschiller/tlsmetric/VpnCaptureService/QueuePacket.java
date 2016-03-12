@@ -35,29 +35,22 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
  */
 
-package de.felixschiller.tlsmetric.Assistant;
+package de.felixschiller.tlsmetric.VpnCaptureService;
 
+import com.voytechs.jnetstream.codec.Packet;
 
-import android.app.Activity;
-import android.content.Context;
+import java.nio.channels.SelectionKey;
 
 /**
- * Singleton which holds the context of the current/last activity.
+ * Queue element for packets with pendig connection establishment.
  */
-
-public class ContextSingleton {
-
-        private static Activity gContext;
-
-        public static void setContext( Activity activity) {
-            gContext = activity;
-        }
-
-        public static Activity getActivity() {
-            return gContext;
-        }
-
-        public static Context getContext() {
-            return gContext;
-        }
+public class QueuePacket {
+    public SelectionKey key;
+    public Packet pkt;
+    public byte[] b;
+    public QueuePacket(SelectionKey key, byte[] b, Packet pkt){
+        this.key = key;
+        this.b = b;
+        this.pkt = pkt;
+    }
 }

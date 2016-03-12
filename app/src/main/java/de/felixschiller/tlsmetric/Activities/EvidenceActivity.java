@@ -1,3 +1,40 @@
+/*
+    TLSMetric
+    - Copyright (2015, 2016) Felix Tsala Schiller
+
+    ###################################################################
+
+    This file is part of TLSMetric.
+
+    TLSMetric is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    TLSMetric is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with TLSMetric.  If not, see <http://www.gnu.org/licenses/>.
+
+    Diese Datei ist Teil von TLSMetric.
+
+    TLSMetric ist Freie Software: Sie können es unter den Bedingungen
+    der GNU General Public License, wie von der Free Software Foundation,
+    Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren
+    veröffentlichten Version, weiterverbreiten und/oder modifizieren.
+
+    TLSMetric wird in der Hoffnung, dass es nützlich sein wird, aber
+    OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite
+    Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+    Siehe die GNU General Public License für weitere Details.
+
+    Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
+ */
+
 package de.felixschiller.tlsmetric.Activities;
 
 import android.content.Context;
@@ -23,11 +60,14 @@ import java.util.ArrayList;
 
 import de.felixschiller.tlsmetric.Assistant.Const;
 import de.felixschiller.tlsmetric.Assistant.ContextSingleton;
-import de.felixschiller.tlsmetric.PacketAnalyze.Announcement;
-import de.felixschiller.tlsmetric.PacketAnalyze.Evidence;
-import de.felixschiller.tlsmetric.PacketAnalyze.PackageInformation;
+import de.felixschiller.tlsmetric.PacketProcessing.Report;
+import de.felixschiller.tlsmetric.PacketProcessing.Evidence;
+import de.felixschiller.tlsmetric.PacketProcessing.PackageInformation;
 import de.felixschiller.tlsmetric.R;
 
+/**
+ * Lists a Report of each detected connection. Most critical if several reports exist.
+ */
 public class EvidenceActivity extends AppCompatActivity{
 
 
@@ -53,7 +93,7 @@ public class EvidenceActivity extends AppCompatActivity{
             adapter = new EvidenceAdapter(this, copyArrayList(Evidence.getSortedEvidence()));
         } else {
             if(Const.IS_DEBUG) Log.e(Const.LOG_TAG, "Evidence list not existing or empty!");
-            adapter = new EvidenceAdapter(this, new ArrayList<Announcement>());
+            adapter = new EvidenceAdapter(this, new ArrayList<Report>());
         }
 
         listview.setAdapter(adapter);
@@ -62,7 +102,7 @@ public class EvidenceActivity extends AppCompatActivity{
             @Override
             public void onItemClick(AdapterView<?> parent, final View view,
                                     int position, long id) {
-                final Announcement ann = (Announcement) parent.getItemAtPosition(position);
+                final Report ann = (Report) parent.getItemAtPosition(position);
                 view.animate().setDuration(500).alpha((float)0.5)
                         .withEndAction(new Runnable() {
                             @Override
@@ -116,15 +156,16 @@ public class EvidenceActivity extends AppCompatActivity{
         }
     }
 
-    private class EvidenceAdapter extends ArrayAdapter<Announcement> {
+    //Customised Adapter class for display of Evidence Reports
+    private class EvidenceAdapter extends ArrayAdapter<Report> {
 
-        private Announcement[] anns;
+        private Report[] anns;
         private final Context context;
 
-        public EvidenceAdapter(Context context, ArrayList<Announcement> AnnList) {
+        public EvidenceAdapter(Context context, ArrayList<Report> AnnList) {
             super(context, R.layout.evidence_list_entry, AnnList);
             this.context = context;
-            this.anns = new Announcement[AnnList.size()];
+            this.anns = new Report[AnnList.size()];
             for(int i = 0; i < AnnList.size(); i++){
                 this.anns[i] = AnnList.get(i);
             }
@@ -138,7 +179,7 @@ public class EvidenceActivity extends AppCompatActivity{
             View rowView = inflater.inflate(R.layout.evidence_list_entry, parent, false);
 
             //if unknown app (-1) try again to get pid by sourcePort;
-            Announcement ann = anns[position];
+            Report ann = anns[position];
             if(ann.pid == -1 && ann.uid == -1){
                 ann.pid = Evidence.getPidByPort(ann.srcPort);
                 ann.uid = Evidence.getUidByPort(ann.srcPort);
@@ -191,9 +232,9 @@ public class EvidenceActivity extends AppCompatActivity{
         super.onDestroy();
     }
 
-    public ArrayList<Announcement> copyArrayList(ArrayList<Announcement> anns){
-        ArrayList<Announcement> copy = new ArrayList<>();
-        for(Announcement ann: anns){
+    public ArrayList<Report> copyArrayList(ArrayList<Report> anns){
+        ArrayList<Report> copy = new ArrayList<>();
+        for(Report ann: anns){
             copy.add(ann);
         }
         return copy;
