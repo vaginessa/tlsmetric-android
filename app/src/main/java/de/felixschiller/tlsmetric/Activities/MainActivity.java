@@ -110,6 +110,19 @@ public class MainActivity extends AppCompatActivity {
         gotoEvidence.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Intent intent = VpnCaptureService.prepare(getApplicationContext());
+                if (intent != null) {
+                    startActivityForResult(intent, 0);
+                } else {
+                    onActivityResult(0, RESULT_OK, null);
+                }
+            }
+
+        //TODO: revive old code
+        /*
+        gotoEvidence.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
                 if(serviceIsRunning){
                     Intent intent = new Intent(ContextSingleton.getContext(), EvidenceActivity.class);
                     startActivity(intent);
@@ -118,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
                     toast.show();
                 }
 
-            }
+            }*/
         });
 
 

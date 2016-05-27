@@ -17,7 +17,7 @@
     <string name="app_name">TLSMetric</string>
     <string name="startDump">TLS Metric with TCPDump.</string>
     <string name="stopDump">Stop TCPDump.</string>
-    <string name="gotoEvidence">inspect connections</string>
+    <string name="gotoEvidence">Start VPN demo</string>
 
     <!-- Filter warning text -->
     <string name="ALERT_HTTP">Unnencrypted HTTP connection detected!</string>
