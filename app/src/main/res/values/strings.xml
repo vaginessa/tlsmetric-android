@@ -1,17 +1,17 @@
 <resources>
     <!-- APP GLOBAL -->
-    <string name="app_name" translatable="false">Net Monitor</string>
-    <string name="app_name_long" translatable="false">Privacy Friendly Net Monitor</string>
+    <string name="app_name" translatable="false">TLSMetric</string>
+    <string name="app_name_long" translatable="false"> TLSMetric</string>
     <string name="about_author_names" translatable="false">Felix Tsala Schiller</string>
 
     <!-- MAIN -->
-    <string name="main_button_text_off">Start Net Monitor</string>
-    <string name="main_text_normalbutton_desc">By touching the start button, Net Monitor starts a passive service which detects all active network connections. A background notification will inform you of the ongoing monitoring.</string>
-    <string name="main_text_stopped">Net Monitor inactive</string>
+    <string name="main_button_text_off">Start TLSMetric</string>
+    <string name="main_text_normalbutton_desc">By touching the start button, TLSMetric starts a passive service which detects all active network connections. A background notification will inform you of the ongoing monitoring.</string>
+    <string name="main_text_stopped">TLSMetric inactive</string>
 
     <!-- SERVICE HANDLER -->
-    <string name="passive_service_start">Net Monitor service has been started in passive mode.</string>
-    <string name="passive_service_stop">Net Monitor service has been stopped. Was in passive mode.</string>
+    <string name="passive_service_start">TLSMetric service has been started in passive mode.</string>
+    <string name="passive_service_stop">TLSMetric service has been stopped. Was in passive mode.</string>
 
     <!-- REPORT -->
     <string name="unknown_app">Unknown App</string>
@@ -37,7 +37,7 @@
     <string name="about_author">Author</string>
     <string name="about_author_contributors">and contributors.</string>
     <string name="about_affiliation">In affiliation with</string>
-    <string name="privacy_friendly">This app belongs to the group of Privacy Friendly Apps developed by Technische Universität Darmstadt. Sourcecode licensed under GPLv3. Images Copyright Technische Universität Darmstadt und Google Inc.</string>
+    <string name="privacy_friendly">This app belongs to the group of  Apps developed by Technische Universität Darmstadt. Sourcecode licensed under GPLv3. Images Copyright Technische Universität Darmstadt und Google Inc.</string>
     <string name="more_info">More information can be found on:</string>
     <string name="github" translatable="false"><a href="https://github.com/SecUSo/privacy-friendly-netmonitor/">Github-Repo</a></string>
     <string name="url" translatable="false"><a href="https://www.secuso.org/pfa">SECUSO-Website</a></string>
@@ -48,13 +48,13 @@
     <!-- HELP -->
     <string name="help">Help</string>
 
-    <string name="help_whatis">What is Privacy Friendly Net Monitor?</string>
-    <string name="help_whatis_answer">Privacy Friendly Net Monitor monitors
+    <string name="help_whatis">What is  TLSMetric?</string>
+    <string name="help_whatis_answer"> TLSMetric monitors
         network traffic from installed apps. It scans active network connections with a background
         service and also displays additional network encryption information.</string>
 
     <string name="help_feature_one">How does connection monitoring work?</string>
-    <string name="help_feature_one_answer">Net Monitor deploys an background service, which scans for
+    <string name="help_feature_one_answer">TLSMetric deploys an background service, which scans for
         active connections every second. Apps invoking the detected connections are identified and
         listed with remote addresses they are communicating with.</string>
 
@@ -84,12 +84,12 @@
 
     <string name="help_privacy">What makes the app privacy-friendly?</string>
 
-    <string name="help_privacy_answer">Privacy Friendly Net Monitor does not include any tracking mechanisms
-        or advertisement and comes free of charge. Privacy Friendly Net Monitor is published under
+    <string name="help_privacy_answer"> TLSMetric does not include any tracking mechanisms
+        or advertisement and comes free of charge.  TLSMetric is published under
         GPLv3 license and is free to distribute or extend.</string>
 
     <string name="help_permission">Which permissions requires the app?</string>
-    <string name="help_permission_answer">Privacy Friendly Net Monitor does not require any permission
+    <string name="help_permission_answer"> TLSMetric does not require any permission
         for scanning active connections. The Certificate Validation feature requires
         the Internet permission to request server test results from Qualys SSL Labs.</string>
 
@@ -100,7 +100,7 @@
 
     <string name="help_ssllabs">What is SSL-Labs</string>
     <string name="help_ssllabs_answer">SSL-Labs API from Qualys performs a deep analysis of SSL/TLS
-        web server. Net Monitor requests analysis results on demand from SSL Labs. SSL-Labs privacy
+        web server. TLSMetric requests analysis results on demand from SSL Labs. SSL-Labs privacy
     terms state, that it does not share submitted IP addresses or hostnames with any third party. </string>
 
 
@@ -119,7 +119,7 @@
 
     <!-- TUTORIAL -->
     <string name="slide1_heading">Welcome!</string>
-    <string name="slide1_text">Privacy Friendly Net Monitor shows the network activity of installed apps. Use it to check on all your device\'s connections.</string>
+    <string name="slide1_text"> TLSMetric shows the network activity of installed apps. Use it to check on all your device\'s connections.</string>
     <string name="slide2_heading">Connection Information</string>
     <string name="slide2_text">Currently active connections and encryption info is listed by app. \n Logging, detailed technical info, and server validation features can be activated in settings.</string>
 

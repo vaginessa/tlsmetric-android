@@ -2,13 +2,13 @@
     <!-- APP GLOBAL -->
 
     <!-- MAIN -->
-    <string name="main_button_text_off">Net Monitor を開始</string>
-    <string name="main_text_normalbutton_desc">スタートボタンをタッチすることにより、Net Monitor はすべてのアクティブなネットワーク接続を検出するパッシブサービスを開始します。 進行中のモニタリングを通知するバックグラウンド通知が表示されます。</string>
-    <string name="main_text_stopped">Net Monitor は非アクティブ</string>
+    <string name="main_button_text_off">TLSMetric を開始</string>
+    <string name="main_text_normalbutton_desc">スタートボタンをタッチすることにより、TLSMetric はすべてのアクティブなネットワーク接続を検出するパッシブサービスを開始します。 進行中のモニタリングを通知するバックグラウンド通知が表示されます。</string>
+    <string name="main_text_stopped">TLSMetric は非アクティブ</string>
 
     <!-- SERVICE HANDLER -->
-    <string name="passive_service_start">Net Monitor サービスはパッシブモードで開始されました。</string>
-    <string name="passive_service_stop">Net Monitor サービスは停止しました。 パッシブモードでした。</string>
+    <string name="passive_service_start">TLSMetric サービスはパッシブモードで開始されました。</string>
+    <string name="passive_service_stop">TLSMetric サービスは停止しました。 パッシブモードでした。</string>
 
     <!-- REPORT -->
     <string name="unknown_app">不明なアプリ</string>
@@ -42,13 +42,13 @@
     <!-- HELP -->
     <string name="help">ヘルプ</string>
 
-    <string name="help_whatis">プライバシーフレンドリー Net Monitor とは?</string>
-    <string name="help_whatis_answer">プライバシーフレンドリー Net Monitor 
+    <string name="help_whatis">プライバシーフレンドリー TLSMetric とは?</string>
+    <string name="help_whatis_answer">プライバシーフレンドリー TLSMetric
         は、インストールされているアプリからのネットワークトラフィックをモニターします。
         バックグラウンドサービスでアクティブなネットワーク接続をスキャンし、追加のネットワーク暗号化情報も表示します。</string>
 
     <string name="help_feature_one">接続モニタリングの仕組みは?</string>
-    <string name="help_feature_one_answer">Net Monitor はバックグラウンドサービスを展開し、
+    <string name="help_feature_one_answer">TLSMetric はバックグラウンドサービスを展開し、
         1 秒ごとにアクティブな接続をスキャンします。 検出された接続を呼び出すアプリケーションは、
         通信しているリモートアドレスとともに識別され、リストされます。</string>
 
@@ -75,11 +75,11 @@
 
     <string name="help_privacy">アプリをプライバシーフレンドリーにするものは?</string>
 
-    <string name="help_privacy_answer">プライバシーフレンドリー Net Monitor は、追跡メカニズムや広告は含まれていません。
-        無料です。 プライバシーフレンドリー Net Monitor はGPLv3 ライセンスの下で公開されており、配布または拡張は自由です。</string>
+    <string name="help_privacy_answer">プライバシーフレンドリー TLSMetric は、追跡メカニズムや広告は含まれていません。
+        無料です。 プライバシーフレンドリー TLSMetric はGPLv3 ライセンスの下で公開されており、配布または拡張は自由です。</string>
 
     <string name="help_permission">アプリが必要とするアクセス許可は?</string>
-    <string name="help_permission_answer">プライバシーフレンドリー Net Monitor は、
+    <string name="help_permission_answer">プライバシーフレンドリー TLSMetric は、
         アクティブな接続をスキャンするためにアクセス許可を必要としません。 証明書検証機能は、
         Qualys SSL Labs のサーバーテスト結果を要求するためのインターネットアクセス許可が必要です。</string>
 
@@ -90,7 +90,7 @@
 
     <string name="help_ssllabs">What is SSL-Labs</string>
     <string name="help_ssllabs_answer">SSL-Labs API from Qualys performs a deep analysis of SSL/TLS
-        web server. Net Monitor requests analysis results on demand from SSL Labs. SSL-Labs privacy
+        web server. TLSMetric requests analysis results on demand from SSL Labs. SSL-Labs privacy
     terms state, that it does not share submitted IP addresses or hostnames with any third party. </string>
 
     <!-- SETTINGS -->
@@ -108,7 +108,7 @@
 
     <!-- TUTORIAL -->
     <string name="slide1_heading">ようこそ!</string>
-    <string name="slide1_text">プライバシーフレンドリー Net Monitor は、インストールされているアプリのネットワーク活動を表示します。 これを使用して、すべてのデバイスの接続をチェックします。</string>
+    <string name="slide1_text">プライバシーフレンドリー TLSMetric は、インストールされているアプリのネットワーク活動を表示します。 これを使用して、すべてのデバイスの接続をチェックします。</string>
     <string name="slide2_heading">接続情報</string>
     <string name="slide2_text">現在、アクティブな接続と暗号化情報は、アプリによってリストされています。 \n ログ、詳細な技術情報、およびサーバーの検証機能は設定で有効にすることができます。</string>
 

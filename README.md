@@ -1,4 +1,4 @@
-# Privacy Friendly Net Monitor #
+# Privacy Friendly TLSMetric #
 
 This app monitors active network sockets and provides information on the scanned connections and apps. The invoking app is identified and listed with it's name, package and icon. The Connection's local and remote socket information (ip/port) is displayed along with a resolved hostname information and protocol evaluation based on well-known ports. Known un-/encrypted protocols are automatically marked. Additional features can be activated in the settings tab. This includes a panel for detailed technical information on connections, a logging functionality to keep scan results, and a remote analysis of TLS-Servers via SSL-Labs API.
 
@@ -27,7 +27,7 @@ possible additional features
 
 ### License ###
 
-Privacy Friendly Net Monitor is licensed under the GPLv3. Copyright (C) 2015 - 2017 Felix Tsala Schiller
+Privacy Friendly TLSMetric is licensed under the GPLv3. Copyright (C) 2015 - 2017 Felix Tsala Schiller
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -39,7 +39,7 @@ The icons used in the nagivation drawer are licensed under the CC BY 2.5. In add
 
 This application uses SSL Labs APIs v1.24.4 by Qualys SSL Labs (Terms of use: https://www.ssllabs.com/downloads/Qualys_SSL_Labs_Terms_of_Use.pdf) and  Java SSL Labs API by Björn Roland GLicense: GPLv3, https://github.com/bjoernr-de/java-ssllabs-api)
 
-Privacy Friendly Net Monitor is a non-root variant of TLSMetric android app (https://bitbucket.org/schillef/tlsmetric/overview) by Felix Tsala Schiller.
+Privacy Friendly TLSMetric is a non-root variant of TLSMetric android app (https://bitbucket.org/schillef/tlsmetric/overview) by Felix Tsala Schiller.
 
 ### Contributors ###
 

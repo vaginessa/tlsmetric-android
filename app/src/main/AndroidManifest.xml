@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.secuso.privacyfriendlynetmonitor" >
+    package="de.schiller.tlsmetric" >
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -11,7 +11,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar" >
         <activity
-            android:name="org.secuso.privacyfriendlynetmonitor.Activities.SplashActivity"
+            android:name="de.schiller.tlsmetric.Activities.SplashActivity"
             android:label="@string/app_name"
             android:theme="@style/SplashTheme" >
             <intent-filter>
@@ -20,56 +20,56 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity"
+            android:name="de.schiller.tlsmetric.Activities.MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar" >
         </activity>
         <activity
-            android:name="org.secuso.privacyfriendlynetmonitor.Activities.ReportDetailActivity"
+            android:name="de.schiller.tlsmetric.Activities.ReportDetailActivity"
             android:label="@string/headline_report_detail"
-            android:parentActivityName="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity"
+            android:parentActivityName="de.schiller.tlsmetric.Activities.MainActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity" />
+                android:value="de.schiller.tlsmetric.Activities.MainActivity" />
         </activity>
         <activity
-            android:name="org.secuso.privacyfriendlynetmonitor.Activities.AboutActivity"
+            android:name="de.schiller.tlsmetric.Activities.AboutActivity"
             android:label="@string/about"
-            android:parentActivityName="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity"
+            android:parentActivityName="de.schiller.tlsmetric.Activities.MainActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity" />
+                android:value="de.schiller.tlsmetric.Activities.MainActivity" />
         </activity>
         <activity
-            android:name="org.secuso.privacyfriendlynetmonitor.Activities.HelpActivity"
+            android:name="de.schiller.tlsmetric.Activities.HelpActivity"
             android:label="@string/help"
-            android:parentActivityName="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity"
+            android:parentActivityName="de.schiller.tlsmetric.Activities.MainActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity" />
+                android:value="de.schiller.tlsmetric.Activities.MainActivity" />
         </activity>
         <activity
-            android:name="org.secuso.privacyfriendlynetmonitor.Activities.SettingsActivity"
+            android:name="de.schiller.tlsmetric.Activities.SettingsActivity"
             android:label="@string/title_activity_settings"
-            android:parentActivityName="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity"
+            android:parentActivityName="de.schiller.tlsmetric.Activities.MainActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.secuso.privacyfriendlynetmonitor.Activities.MainActivity" />
+                android:value="de.schiller.tlsmetric.Activities.MainActivity" />
         </activity>
         <activity
-            android:name="org.secuso.privacyfriendlynetmonitor.Activities.TutorialActivity"
+            android:name="de.schiller.tlsmetric.Activities.TutorialActivity"
             android:theme="@style/AppTheme.NoActionBar">
         </activity>
 
       <service
-            android:name="org.secuso.privacyfriendlynetmonitor.ConnectionAnalysis.PassiveService"
+            android:name="de.schiller.tlsmetric.ConnectionAnalysis.PassiveService"
             android:label=".NetMonitorPassiveService"
             android:enabled="true"
             android:permission="android.permission.BIND_SERVICE" >

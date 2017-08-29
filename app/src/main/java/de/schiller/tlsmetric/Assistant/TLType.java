@@ -1,4 +1,4 @@
-package org.secuso.privacyfriendlynetmonitor.Assistant;
+package de.schiller.tlsmetric.Assistant;
 
 /**
  * Enum indication transport layer protocol
