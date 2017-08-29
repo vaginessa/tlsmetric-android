@@ -56,8 +56,8 @@ import java.util.Set;
 public interface Const {
 
     //App constants
-    boolean IS_DEBUG = false;
-    String LOG_TAG = "NetMonitor";
+    boolean IS_DEBUG = true;
+    String LOG_TAG = "TLSMetric";
     String FILE_IF_LIST = "iflist";
 
     //SSL LABS CONSTANTS
@@ -85,5 +85,18 @@ public interface Const {
     String IS_LOG = "IS_LOG";
     String IS_CERTVAL = "IS_CERTVAL";
     String PREF_NAME = "PREF_NAME";
+
+    //Sort out these bewlow
+
+    int CHANNEL_TIMEOUT_UDP = 10000;
+    int CHANNEL_TIMEOUT_TCP = 3800;
+
+    //File info for AnalyzerService
+    String FILE_TCPDUMP = "tcpdump";
+    String FILE_DUMP = "dump.pcap";
+    String FILE_FILTER = "filter.ini";
+    String PARAMS = "-w";
+    Object FILE_RESOLVE_PID = "resolve";
+    int ANNOUNCEMENT_TIMEOUT = 1;
 
 }
